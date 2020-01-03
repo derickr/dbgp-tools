@@ -35,9 +35,12 @@ func formatXML(rawXmlData string) {
 
 
 func handleConnection(c net.Conn, rl *readline.Instance) {
+	var lastCommand string
+
 	fmt.Printf("Connect from %s\n", c.RemoteAddr().String())
 
 	for {
+
 		response, err := dbgp.ReadResponse(c)
 		if err != nil { // reading failed
 			break
@@ -50,10 +53,16 @@ func handleConnection(c net.Conn, rl *readline.Instance) {
 			break
 		}
 
+		if line == "" {
+			line = lastCommand
+		}
+
 		err = dbgp.SendCommand(c, line)
 		if err != nil {
 			break
 		}
+
+		lastCommand = line
 	}
 	c.Close()
 	fmt.Printf("Disconnect\n")
