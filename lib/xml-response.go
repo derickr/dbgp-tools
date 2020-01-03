@@ -62,11 +62,35 @@ type Context struct {
 	Name string `xml:"name,attr"`
 }
 
+type Expression struct {
+	XMLName xml.Name `xml:"expression"`
+	Encoding string  `xml:"encoding,attr,omitempty"`
+	Value string     `xml:",chardata"`
+}
+
+type Breakpoint struct {
+	XMLName xml.Name `xml:"breakpoint"`
+	ID	int `xml:"id,attr"`
+	Type string `xml:"type,attr"`
+	State    string `xml:"state,attr,omitempty"`
+	Resolved string `xml:"resolved,attr,omitempty"`
+	Filename string `xml:"filename,attr,omitempty"`
+	LineNo   int    `xml:"lineno,attr,omitempty"`
+	Classname string `xml:"class,attr,omitempty"`
+	Function  string `xml:"function,attr,omitempty"`
+	Exception string `xml:"exception,attr,omitempty"`
+	HitValue int    `xml:"hit_value,attr,omitempty"`
+	HitCount int    `xml:"hit_count,attr,omitempty"`
+	HitCondition string `xml:"hit_condition,attr,omitempty"`
+	Expression   Expression `xml:"expression"`
+}
+
 type Response struct {
     XMLName xml.Name `xml:"response"`
 	XmlNS   string   `xml:"xmlns,attr"`
 	XmlNSXdebug string `xml:"xmlns:xdebug,attr"`
     TID  string   `xml:"transaction_id,attr"`
+    ID  string   `xml:"id,attr"`
     Command string   `xml:"command,attr,omitempty"`
 	Status  string   `xml:"status,attr,omitempty"`
     Success string   `xml:"success,attr,omitempty"`
@@ -79,6 +103,7 @@ type Response struct {
 
 	Error Error    `xml:"error,omitempty"`
 
+	Breakpoints []Breakpoint `xml:"breakpoint,omitempty"`
 	Property []Property `xml:"property,omitempty"`
 }
 
@@ -103,8 +128,20 @@ func formatContext(tid string, context Context) string {
 	return fmt.Sprintf("%s | %d: %s\n", Black(tid), Yellow(context.ID), Bold(Green(context.Name)))
 }
 
+func formatLocation(filename string, lineno int) string {
+	return fmt.Sprintf("%s:%d", Bold(Green(filename)), Bold(Green(lineno)));
+}
+
+func formatFunction(class string, method string) string {
+	if class != "" {
+		return fmt.Sprintf("%s->%s", Bold(BrightBlue(class)), Bold(BrightBlue(method)));
+	} else {
+		return fmt.Sprintf("%s", Bold(BrightBlue(method)));
+	}
+}
+
 func formatStackFrame(tid string, frame Stack) string {
-	return fmt.Sprintf("%s | %d: %s:%d: %s\n", Black(tid), Yellow(frame.Level), Bold(Green(frame.Filename)), Bold(Green(frame.LineNo)), Bold(Yellow(frame.Where)))
+	return fmt.Sprintf("%s | %d: %s: %s\n", Black(tid), Yellow(frame.Level), formatLocation(frame.Filename, frame.LineNo), Bold(Yellow(frame.Where)))
 }
 
 func formatProperty(tid string, leader string, prop Property) string {
@@ -134,6 +171,60 @@ func formatProperty(tid string, leader string, prop Property) string {
 	return header + content + "\n"
 }
 
+func formatBreakpointSet(response Response) string {
+	return fmt.Sprintf("%s | Breakpoint set with ID %s\n", Black(response.TID), Bold(Green(response.ID)))
+}
+
+func (brkpoint Breakpoint) String() string {
+	content := ""
+
+	switch brkpoint.State {
+		case "enabled":
+			content += fmt.Sprintf("%s ", Bold(BrightGreen("●")))
+		case "disabled":
+			content += fmt.Sprintf("%s ", Bold(BrightRed("○")))
+		case "temporary":
+			if brkpoint.HitCount == 0 {
+				content += fmt.Sprintf("%s ", Bold(BrightYellow("◐")))
+			} else {
+				content += fmt.Sprintf("%s ", Bold(BrightRed("◐")))
+			}
+	}
+
+	content += fmt.Sprintf("(%d", Yellow(brkpoint.HitCount))
+	if brkpoint.HitCondition != "" {
+		content += fmt.Sprintf(" %s%d", Green(brkpoint.HitCondition), Yellow(brkpoint.HitValue))
+	}
+	content += ") "
+
+	content += fmt.Sprintf("%d %s: ", Bold(Green(brkpoint.ID)), Yellow(brkpoint.Type))
+
+	switch brkpoint.Type {
+		case "condition", "line":
+			content += formatLocation(brkpoint.Filename, brkpoint.LineNo)
+
+		case "call", "return":
+			content += formatFunction(brkpoint.Classname, brkpoint.Function)
+
+		case "exception":
+			content += fmt.Sprintf("%s", Bold(Green(brkpoint.Exception)))
+	}
+
+	if brkpoint.Expression.Value != "" {
+		value := []byte(brkpoint.Expression.Value)
+		if (brkpoint.Expression.Encoding == "base64") {
+			value, _ = base64.StdEncoding.DecodeString(string(value))
+		}
+		content += fmt.Sprintf(" cond: %s", Yellow(value))
+	}
+
+	return content
+}
+
+func formatBreakpoint(TID string, brkpoint Breakpoint) string {
+	return fmt.Sprintf("%s | ", Black(TID)) + brkpoint.String() + "\n"
+}
+
 func formatError(response Response) string {
 	return fmt.Sprintf("%s | %s", Yellow(response.TID), Green(response.Command)) +
 		fmt.Sprintf("\n%s | %s(%d): %s\n", Black(response.TID), Bold(Red("Error")), Red(response.Error.Code), BrightRed(Bold(response.Error.Message.Text)))
@@ -147,13 +238,21 @@ func (response Response) String() string {
 	}
 
 	switch response.Command {
-		case "status", "step_into":
+		case "run", "status", "step_into", "step_over":
 			output += fmt.Sprintf(" > %s/%s", Green(response.Status), Green(response.Reason))
 	}
 
 	output += "\n"
 
 	switch response.Command {
+		case "breakpoint_get", "breakpoint_list", "breakpoint_remove", "breakpoint_update":
+			for _, brkpoint := range response.Breakpoints {
+				output += formatBreakpoint(response.TID, brkpoint)
+			}
+
+		case "breakpoint_set":
+			output += formatBreakpointSet(response)
+
 		case "context_get", "property_get":
 			for _, prop := range response.Property {
 				output += formatProperty(response.TID, "", prop)
@@ -169,7 +268,7 @@ func (response Response) String() string {
 				output += formatStackFrame(response.TID, frame)
 			}
 
-		case "step_into":
+		case "run", "step_into", "step_over":
 			if response.Status != "stopping" {
 				output += fmt.Sprintf("%s | %s:%d\n", Black(response.TID), Bold(Green(response.Message.Filename)), Bold(Green(response.Message.LineNo)))
 			}
