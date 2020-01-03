@@ -1,0 +1,5 @@
+debugclient/debugclient
+debugclient/debugclient.exe
+debugclient/*.sw?
+lib/*.sw?
+proxy/*.sw?
