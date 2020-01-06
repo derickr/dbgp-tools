@@ -214,7 +214,7 @@ func (response Response) String() string {
 	case "feature_get":
 		output += formatFeatureGet(response)
 
-	case "feature_set":
+	case "feature_set", "stdout":
 		output += formatFeatureSet(response)
 
 	case "stack_get":

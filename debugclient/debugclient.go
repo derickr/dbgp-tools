@@ -37,6 +37,15 @@ func formatXML(rawXmlData string) {
 	} else {
 		fmt.Println(err)
 	}
+
+	stream, err := dbgp.ParseStreamXML(rawXmlData)
+
+	if err == nil {
+		fmt.Println(stream)
+		return
+	} else {
+		fmt.Println(err)
+	}
 }
 
 func handleConnection(c net.Conn, rl *readline.Instance) {
