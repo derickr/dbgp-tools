@@ -1,7 +1,7 @@
 package dbgp
 
 import (
-    "fmt"
+	"fmt"
 	"net"
 	"strings"
 )

@@ -4,13 +4,13 @@
 package main
 
 import (
-    "fmt"
+	"fmt"
+	"github.com/chzyer/readline"      // MIT
+	. "github.com/logrusorgru/aurora" // WTFPL
+	"github.com/pborman/getopt/v2"    // BSD-3
+	"github.com/xdebug/dbgp-tools/lib"
 	"net"
 	"os"
-	"github.com/pborman/getopt/v2" // BSD-3
-	"github.com/chzyer/readline" // MIT
-	"github.com/xdebug/dbgp-tools/lib"
-	. "github.com/logrusorgru/aurora" // WTFPL
 )
 
 func formatXML(rawXmlData string) {
@@ -32,7 +32,6 @@ func formatXML(rawXmlData string) {
 		fmt.Println(err)
 	}
 }
-
 
 func handleConnection(c net.Conn, rl *readline.Instance) {
 	var lastCommand string
@@ -69,9 +68,9 @@ func handleConnection(c net.Conn, rl *readline.Instance) {
 }
 
 var (
-	help = false
-	once = false
-	port = 9000
+	help    = false
+	once    = false
+	port    = 9000
 	version = false
 )
 
