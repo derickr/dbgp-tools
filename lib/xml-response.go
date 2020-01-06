@@ -245,23 +245,21 @@ func formatBreakpoint(TID string, brkpoint Breakpoint) string {
 }
 
 func formatError(response Response) string {
-	return fmt.Sprintf("%s | %s", Yellow(response.TID), Green(response.Command)) +
-		fmt.Sprintf("\n%s | %s(%d): %s\n", Black(response.TID), Bold(Red("Error")), Red(response.Error.Code), BrightRed(Bold(response.Error.Message.Text)))
+	return fmt.Sprintf("%s | %s(%d): %s\n", Black(response.TID), Bold(Red("Error")), Red(response.Error.Code), BrightRed(Bold(response.Error.Message.Text)))
 }
 
 func (response Response) String() string {
 	output := fmt.Sprintf("%s | %s", Yellow(response.TID), Green(response.Command))
 
-	if response.Error.Code != 0 {
-		return formatError(response)
-	}
-
-	switch response.Command {
-		case "run", "status", "step_into", "step_over":
-			output += fmt.Sprintf(" > %s/%s", Green(response.Status), Green(response.Reason))
+	if response.Status != "" && response.Reason != "" {
+		output += fmt.Sprintf(" > %s/%s", Green(response.Status), Green(response.Reason))
 	}
 
 	output += "\n"
+
+	if response.Error.Code != 0 {
+		return output + formatError(response)
+	}
 
 	switch response.Command {
 		case "breakpoint_get", "breakpoint_list", "breakpoint_remove", "breakpoint_update":
