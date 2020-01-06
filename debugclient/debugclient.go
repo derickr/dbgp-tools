@@ -11,6 +11,7 @@ import (
 	"github.com/xdebug/dbgp-tools/lib"
 	"net"
 	"os"
+	"os/user"
 )
 
 func formatXML(rawXmlData string) {
@@ -96,6 +97,21 @@ func handleArguments() {
 	}
 }
 
+func initReadline() *readline.Instance {
+	usr, _ := user.Current()
+	dir := usr.HomeDir
+
+	rl, err := readline.NewEx(&readline.Config{
+		Prompt: fmt.Sprintf("%s", Bold("(cmd) ")),
+		HistoryFile: dir + "/.xdebug-debugclient.hist",
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	return rl
+}
+
 func main() {
 	printStartUp()
 	handleArguments()
@@ -110,10 +126,7 @@ func main() {
 
 	fmt.Printf("\nWaiting for debug server to connect on port %d.\n", port)
 
-	rl, err := readline.New(fmt.Sprintf("%s", Bold("(cmd) ")))
-	if err != nil {
-		panic(err)
-	}
+	rl := initReadline()
 	defer rl.Close()
 
 	for {
