@@ -20,14 +20,19 @@ func formatXML(rawXmlData string) {
 	if err == nil {
 		fmt.Println(response)
 		return
-	} else {
-		fmt.Println(err)
 	}
 
 	init, err := dbgp.ParseInitXML(rawXmlData)
 
 	if err == nil {
 		fmt.Println(init)
+		return
+	}
+
+	notify, err := dbgp.ParseNotifyXML(rawXmlData)
+
+	if err == nil {
+		fmt.Println(notify)
 		return
 	} else {
 		fmt.Println(err)
