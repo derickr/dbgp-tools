@@ -93,7 +93,8 @@ type Response struct {
     ID  string   `xml:"id,attr"`
     Command string   `xml:"command,attr,omitempty"`
 	Status  string   `xml:"status,attr,omitempty"`
-    Success string   `xml:"success,attr,omitempty"`
+    Success int   `xml:"success,attr,omitempty"`
+    Supported int   `xml:"supported,attr,omitempty"`
 	Feature string   `xml:"feature,attr,omitempty"`
 	Reason  string   `xml:"reason,attr,omitempty"`
 	Stack   []Stack  `xml:"stack,omitempty"`
@@ -105,6 +106,8 @@ type Response struct {
 
 	Breakpoints []Breakpoint `xml:"breakpoint,omitempty"`
 	Property []Property `xml:"property,omitempty"`
+
+	Value string `xml:",cdata"`
 }
 
 func ParseResponseXML(rawXmlData string) (Response, error) {
@@ -126,6 +129,22 @@ func ParseResponseXML(rawXmlData string) (Response, error) {
 
 func formatContext(tid string, context Context) string {
 	return fmt.Sprintf("%s | %d: %s\n", Black(tid), Yellow(context.ID), Bold(Green(context.Name)))
+}
+
+func formatFeatureGet(response Response) string {
+	if (response.Supported == 1) {
+		return fmt.Sprintf("%s | %s > %s\n", Black(response.TID), Bold(Green("supported")), Bold(Green(response.Value)))
+	} else {
+		return fmt.Sprintf("%s | %s\n", Black(response.TID), Bold(Red("not supported")))
+	}
+}
+
+func formatFeatureSet(response Response) string {
+	if (response.Success == 1) {
+		return fmt.Sprintf("%s | %s\n", Black(response.TID), Bold(Green("OK")))
+	} else {
+		return fmt.Sprintf("%s | %s\n", Black(response.TID), Bold(Red("-")))
+	}
 }
 
 func formatLocation(filename string, lineno int) string {
@@ -262,6 +281,12 @@ func (response Response) String() string {
 			for _, context := range response.Contexts {
 				output += formatContext(response.TID, context)
 			}
+
+		case "feature_get":
+			output += formatFeatureGet(response)
+
+		case "feature_set":
+			output += formatFeatureSet(response)
 
 		case "stack_get":
 			for _, frame := range response.Stack {
