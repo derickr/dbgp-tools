@@ -2,31 +2,40 @@ package dbgp
 
 import (
 	"fmt"
+	"io"
+	"bufio"
 	"net"
-	"strings"
 )
 
-func ReadResponse(c net.Conn) (string, error) {
-	buf := make([]byte, 2048)
+type dbgpReader struct {
+	reader *bufio.Reader
+}
 
-	_, err := c.Read(buf)
+func NewDbgpReader(reader io.Reader) *dbgpReader {
+	var tmp dbgpReader
+	tmp.reader = bufio.NewReader(reader)
+
+	return &tmp
+}
+
+func (dbgp *dbgpReader) ReadResponse() (string, error) {
+	/* Read length */
+	_, err := dbgp.reader.ReadBytes('\000');
 
 	if err != nil {
-		fmt.Println("Error reading:", err.Error())
+		fmt.Println("Error reading length:", err.Error())
 		return "", err
 	}
 
-	/* Strip out everything up until the first leading \0 */
-	initial := strings.IndexByte(string(buf), 0)
-	xml := string(buf[initial+1:])
-	final := strings.IndexByte(xml, 0)
+	/* Read data */
+	data, err := dbgp.reader.ReadBytes('\000');
 
-	if final == -1 {
-		fmt.Println("Error reading: couldn't find end '\\0'")
+	if err != nil {
+		fmt.Println("Error reading data:", err.Error())
 		return "", err
 	}
 
-	return xml[:final], nil
+	return string(data), nil
 }
 
 func SendCommand(c net.Conn, line string) error {

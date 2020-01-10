@@ -72,11 +72,12 @@ func handleConnection(c net.Conn, rl *readline.Instance) {
 	var lastCommand string
 	counter := 1
 
+	reader := dbgp.NewDbgpReader(c)
+
 	fmt.Printf("Connect from %s\n", c.RemoteAddr().String())
 
 	for {
-
-		response, err := dbgp.ReadResponse(c)
+		response, err := reader.ReadResponse()
 		if err != nil { // reading failed
 			break
 		}
