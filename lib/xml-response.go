@@ -118,9 +118,9 @@ func formatFeatureGet(response Response) string {
 
 func formatFeatureSet(response Response) string {
 	if response.Success == 1 {
-		return fmt.Sprintf("%s | %s\n", Black(response.TID), Bold(Green("OK")))
+		return fmt.Sprintf("%s | %s: %s\n", Black(response.TID), Bold(Yellow(response.Feature)), Bold(Green("OK")))
 	} else {
-		return fmt.Sprintf("%s | %s\n", Black(response.TID), Bold(Red("-")))
+		return fmt.Sprintf("%s | %s: %s\n", Black(response.TID), Bold(Yellow(response.Feature)), Bold(Red("FAIL")))
 	}
 }
 
