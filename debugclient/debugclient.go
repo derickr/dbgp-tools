@@ -81,7 +81,7 @@ func handleConnection(c net.Conn, rl *readline.Instance) {
 		if err != nil { // reading failed
 			break
 		}
-		fmt.Printf("%s\n", response)
+		fmt.Printf("%s\n", Faint(response))
 		if formatXML(response) == true {
 			continue
 		}
