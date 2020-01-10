@@ -12,6 +12,7 @@ import (
 	"net"
 	"os"
 	"os/user"
+	"strings"
 )
 
 func formatXML(rawXmlData string) bool {
@@ -50,8 +51,26 @@ func formatXML(rawXmlData string) bool {
 	return false
 }
 
+func injectIIfNeeded(line string, counter int) string {
+	parts := strings.Split(strings.TrimSpace(line), " ")
+
+	for _, item := range parts {
+		if item == "-i" {
+			return line
+		}
+	}
+
+	var newParts []string
+	newParts = append(newParts, parts[0])
+	newParts = append(newParts, "-i", fmt.Sprintf("%d", counter))
+	newParts = append(newParts, parts[1:]...)
+
+	return strings.Join(newParts, " ")
+}
+
 func handleConnection(c net.Conn, rl *readline.Instance) {
 	var lastCommand string
+	counter := 1
 
 	fmt.Printf("Connect from %s\n", c.RemoteAddr().String())
 
@@ -74,6 +93,9 @@ func handleConnection(c net.Conn, rl *readline.Instance) {
 		if line == "" {
 			line = lastCommand
 		}
+
+		line = injectIIfNeeded(line, counter)
+		counter++
 
 		err = dbgp.SendCommand(c, line)
 		if err != nil {
