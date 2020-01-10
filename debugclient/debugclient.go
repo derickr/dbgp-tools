@@ -14,26 +14,26 @@ import (
 	"os/user"
 )
 
-func formatXML(rawXmlData string) {
+func formatXML(rawXmlData string) bool {
 	response, err := dbgp.ParseResponseXML(rawXmlData)
 
 	if err == nil {
 		fmt.Println(response)
-		return
+		return false
 	}
 
 	init, err := dbgp.ParseInitXML(rawXmlData)
 
 	if err == nil {
 		fmt.Println(init)
-		return
+		return false
 	}
 
 	notify, err := dbgp.ParseNotifyXML(rawXmlData)
 
 	if err == nil {
 		fmt.Println(notify)
-		return
+		return true
 	} else {
 		fmt.Println(err)
 	}
@@ -42,10 +42,12 @@ func formatXML(rawXmlData string) {
 
 	if err == nil {
 		fmt.Println(stream)
-		return
+		return true
 	} else {
 		fmt.Println(err)
 	}
+
+	return false
 }
 
 func handleConnection(c net.Conn, rl *readline.Instance) {
@@ -60,7 +62,9 @@ func handleConnection(c net.Conn, rl *readline.Instance) {
 			break
 		}
 		fmt.Printf("%s\n", response)
-		formatXML(response)
+		if formatXML(response) == true {
+			continue
+		}
 
 		line, err := rl.Readline()
 		if err != nil { // io.EOF
