@@ -5,15 +5,20 @@ import (
 	"io"
 	"bufio"
 	"net"
+	"strings"
 )
 
 type dbgpReader struct {
 	reader *bufio.Reader
+	writer io.Writer
+	counter int
 }
 
-func NewDbgpReader(reader io.Reader) *dbgpReader {
+func NewDbgpReader(c net.Conn) *dbgpReader {
 	var tmp dbgpReader
-	tmp.reader = bufio.NewReader(reader)
+	tmp.reader = bufio.NewReader(c)
+	tmp.writer = c
+	tmp.counter = 1
 
 	return &tmp
 }
@@ -38,14 +43,34 @@ func (dbgp *dbgpReader) ReadResponse() (string, error) {
 	return string(data), nil
 }
 
-func SendCommand(c net.Conn, line string) error {
-	_, err := c.Write([]byte(line))
+func injectIIfNeeded(line string, counter int) string {
+	parts := strings.Split(strings.TrimSpace(line), " ")
+
+	for _, item := range parts {
+		if item == "-i" {
+			return line
+		}
+	}
+
+	var newParts []string
+	newParts = append(newParts, parts[0])
+	newParts = append(newParts, "-i", fmt.Sprintf("%d", counter))
+	newParts = append(newParts, parts[1:]...)
+
+	return strings.Join(newParts, " ")
+}
+
+func (dbgp *dbgpReader) SendCommand(line string) error {
+	line = injectIIfNeeded(line, dbgp.counter)
+	dbgp.counter++
+
+	_, err := dbgp.writer.Write([]byte(line))
 	if err != nil {
 		fmt.Println("Error writing:", err.Error())
 		return err
 	}
 
-	_, err = c.Write([]byte("\000"))
+	_, err = dbgp.writer.Write([]byte("\000"))
 	if err != nil {
 		fmt.Println("Error writing:", err.Error())
 		return err
