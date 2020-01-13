@@ -1,16 +1,16 @@
 package dbgp
 
 import (
+	"bufio"
 	"fmt"
 	"io"
-	"bufio"
 	"net"
 	"strings"
 )
 
 type dbgpReader struct {
-	reader *bufio.Reader
-	writer io.Writer
+	reader  *bufio.Reader
+	writer  io.Writer
 	counter int
 }
 
@@ -25,7 +25,7 @@ func NewDbgpReader(c net.Conn) *dbgpReader {
 
 func (dbgp *dbgpReader) ReadResponse() (string, error) {
 	/* Read length */
-	_, err := dbgp.reader.ReadBytes('\000');
+	_, err := dbgp.reader.ReadBytes('\000')
 
 	if err != nil {
 		fmt.Println("Error reading length:", err.Error())
@@ -33,7 +33,7 @@ func (dbgp *dbgpReader) ReadResponse() (string, error) {
 	}
 
 	/* Read data */
-	data, err := dbgp.reader.ReadBytes('\000');
+	data, err := dbgp.reader.ReadBytes('\000')
 
 	if err != nil {
 		fmt.Println("Error reading data:", err.Error())

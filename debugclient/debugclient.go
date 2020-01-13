@@ -61,7 +61,7 @@ func handleConnection(c net.Conn, rl *readline.Instance) {
 			break
 		}
 
-		if (showXML) {
+		if showXML {
 			fmt.Printf("%s\n", Faint(response))
 		}
 

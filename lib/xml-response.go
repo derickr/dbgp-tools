@@ -176,10 +176,10 @@ func formatSource(response Response) string {
 		value, _ = base64.StdEncoding.DecodeString(string(value))
 	}
 
-	lines := strings.Split(strings.TrimSpace(string(value)), "\n");
+	lines := strings.Split(strings.TrimSpace(string(value)), "\n")
 
 	for i, line := range lines {
-		content += fmt.Sprintf("%4d", Bold(Green((i + 1)))) + " " + line + "\n"
+		content += fmt.Sprintf("%4d", Bold(Green((i+1)))) + " " + line + "\n"
 	}
 
 	return content
