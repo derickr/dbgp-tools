@@ -81,7 +81,11 @@ func handleConnection(c net.Conn, rl *readline.Instance) {
 		if err != nil { // reading failed
 			break
 		}
-		fmt.Printf("%s\n", Faint(response))
+
+		if (showXML) {
+			fmt.Printf("%s\n", Faint(response))
+		}
+
 		if formatXML(response) == true {
 			continue
 		}
@@ -113,6 +117,7 @@ var (
 	help    = false
 	once    = false
 	port    = 9000
+	showXML = false
 	version = false
 )
 
@@ -125,6 +130,7 @@ func handleArguments() {
 	getopt.Flag(&help, 'h', "Show this help")
 	getopt.Flag(&port, 'p', "Specify the port to listen on")
 	getopt.Flag(&version, 'v', "Show version number and exit")
+	getopt.Flag(&showXML, 'x', "Show protocol XML")
 	getopt.Flag(&once, '1', "Debug once and then exit")
 
 	getopt.Parse()
