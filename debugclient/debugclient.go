@@ -15,6 +15,8 @@ import (
 )
 
 func formatXML(rawXmlData string) bool {
+	var response fmt.Stringer
+
 	response, err := dbgp.ParseResponseXML(rawXmlData)
 
 	if err == nil {
@@ -22,29 +24,25 @@ func formatXML(rawXmlData string) bool {
 		return false
 	}
 
-	init, err := dbgp.ParseInitXML(rawXmlData)
+	response, err = dbgp.ParseInitXML(rawXmlData)
 
 	if err == nil {
-		fmt.Println(init)
+		fmt.Println(response)
 		return false
 	}
 
-	notify, err := dbgp.ParseNotifyXML(rawXmlData)
+	response, err = dbgp.ParseNotifyXML(rawXmlData)
 
 	if err == nil {
-		fmt.Println(notify)
+		fmt.Println(response)
 		return true
-	} else {
-		fmt.Println(err)
 	}
 
-	stream, err := dbgp.ParseStreamXML(rawXmlData)
+	response, err = dbgp.ParseStreamXML(rawXmlData)
 
 	if err == nil {
-		fmt.Println(stream)
+		fmt.Println(response)
 		return true
-	} else {
-		fmt.Println(err)
 	}
 
 	return false
