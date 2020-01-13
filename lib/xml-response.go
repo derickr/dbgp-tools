@@ -74,6 +74,7 @@ type Response struct {
 	Supported   int       `xml:"supported,attr,omitempty"`
 	Feature     string    `xml:"feature,attr,omitempty"`
 	Reason      string    `xml:"reason,attr,omitempty"`
+	Encoding    string    `xml:"encoding,attr,omitempty"`
 	Stack       []Stack   `xml:"stack,omitempty"`
 	Contexts    []Context `xml:"context,omitempty"`
 
@@ -167,6 +168,23 @@ func formatProperty(tid string, leader string, prop Property) string {
 	return header + content + "\n"
 }
 
+func formatSource(response Response) string {
+	var content string
+
+	value := []byte(response.Value)
+	if response.Encoding == "base64" {
+		value, _ = base64.StdEncoding.DecodeString(string(value))
+	}
+
+	lines := strings.Split(string(value), "\n");
+
+	for i, line := range lines {
+		content += fmt.Sprintf("%4d", Bold(Green((i + 1)))) + " " + line + "\n"
+	}
+
+	return content
+}
+
 func formatBreakpointSet(response Response) string {
 	return fmt.Sprintf("%s | Breakpoint set with ID %s\n", Black(response.TID), Bold(Green(response.ID)))
 }
@@ -216,6 +234,9 @@ func (response Response) String() string {
 
 	case "feature_set", "stdout":
 		output += formatFeatureSet(response)
+
+	case "source":
+		output += formatSource(response)
 
 	case "stack_get":
 		for _, frame := range response.Stack {
