@@ -62,6 +62,36 @@ type Context struct {
 	Name    string   `xml:"name,attr"`
 }
 
+func (s *Typemap) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	nameAttr := ""
+	typeAttr := ""
+	xsiTypeAttr := ""
+
+	for _, attr := range start.Attr {
+		if attr.Name.Space == "" && attr.Name.Local == "name" {
+			nameAttr = attr.Value
+		}
+		if attr.Name.Space == "" && attr.Name.Local == "type" {
+			typeAttr = attr.Value
+		}
+		if attr.Name.Space == "http://www.w3.org/2001/XMLSchema-instance" && attr.Name.Local == "type" {
+			xsiTypeAttr = attr.Value
+		}
+	}
+
+	d.Skip()
+	*s = Typemap{Name: nameAttr, Type: typeAttr, XsiType: xsiTypeAttr}
+
+	return nil
+}
+
+type Typemap struct {
+	XMLName xml.Name `xml:"map"`
+	Name    string   `xml:"name,attr"`
+	Type    string   `xml:"type,attr"`
+	XsiType string   `xml:"http://www.w3.org/2001/XMLSchema-instance type,attr"`
+}
+
 type Response struct {
 	XMLName     xml.Name  `xml:"response"`
 	XmlNS       string    `xml:"xmlns,attr"`
@@ -77,6 +107,7 @@ type Response struct {
 	Encoding    string    `xml:"encoding,attr,omitempty"`
 	Stack       []Stack   `xml:"stack,omitempty"`
 	Contexts    []Context `xml:"context,omitempty"`
+	Typemap     []Typemap `xml:"map,omitempty"`
 
 	Message Message `xml:"message,omitempty"`
 
@@ -139,6 +170,14 @@ func formatFunction(class string, method string) string {
 
 func formatStackFrame(tid string, frame Stack) string {
 	return fmt.Sprintf("%s | %d: %s: %s\n", Black(tid), Yellow(frame.Level), formatLocation(frame.Filename, frame.LineNo), Bold(Yellow(frame.Where)))
+}
+
+func formatTypemap(tid string, typemap Typemap) string {
+	if typemap.XsiType != "" {
+		return fmt.Sprintf("%s | %s: %s (%s)\n", Black(tid), Yellow(typemap.Name), Bold(Green(typemap.Type)), Bold(Green(typemap.XsiType)))
+	} else {
+		return fmt.Sprintf("%s | %s: %s\n", Black(tid), Yellow(typemap.Name), Bold(Green(typemap.Type)))
+	}
 }
 
 func formatProperty(tid string, leader string, prop Property) string {
@@ -241,6 +280,11 @@ func (response Response) String() string {
 	case "stack_get":
 		for _, frame := range response.Stack {
 			output += formatStackFrame(response.TID, frame)
+		}
+
+	case "typemap_get":
+		for _, typemap := range response.Typemap {
+			output += formatTypemap(response.TID, typemap)
 		}
 
 	case "run", "step_into", "step_over":
