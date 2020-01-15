@@ -43,26 +43,33 @@ func (dbgp *dbgpReader) ReadResponse() (string, error) {
 	return string(data), nil
 }
 
-func injectIIfNeeded(line string, counter int) string {
-	parts := strings.Split(strings.TrimSpace(line), " ")
-
+func (dbgp *dbgpReader) injectIIfNeeded(parts []string) []string {
 	for _, item := range parts {
 		if item == "-i" {
-			return line
+			return parts
 		}
 	}
 
 	var newParts []string
 	newParts = append(newParts, parts[0])
-	newParts = append(newParts, "-i", fmt.Sprintf("%d", counter))
+	newParts = append(newParts, "-i", fmt.Sprintf("%d", dbgp.counter))
 	newParts = append(newParts, parts[1:]...)
 
-	return strings.Join(newParts, " ")
+	dbgp.counter++
+
+	return newParts
+}
+
+func (dbgp *dbgpReader) processLine(line string) string {
+	parts := strings.Split(strings.TrimSpace(line), " ")
+
+	parts = dbgp.injectIIfNeeded(parts)
+
+	return strings.Join(parts, " ")
 }
 
 func (dbgp *dbgpReader) SendCommand(line string) error {
-	line = injectIIfNeeded(line, dbgp.counter)
-	dbgp.counter++
+	line = dbgp.processLine(line);
 
 	_, err := dbgp.writer.Write([]byte(line))
 	if err != nil {
