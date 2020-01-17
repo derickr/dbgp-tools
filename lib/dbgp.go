@@ -95,7 +95,7 @@ func (dbgp *dbgpReader) processLine(line string) string {
 }
 
 func (dbgp *dbgpReader) SendCommand(line string) error {
-	line = dbgp.processLine(line);
+	line = dbgp.processLine(line)
 
 	_, err := dbgp.writer.Write([]byte(line))
 	if err != nil {
