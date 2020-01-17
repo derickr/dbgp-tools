@@ -14,40 +14,6 @@ import (
 	"os/user"
 )
 
-func formatXML(rawXmlData string) bool {
-	var response fmt.Stringer
-
-	response, err := dbgp.ParseResponseXML(rawXmlData)
-
-	if err == nil {
-		fmt.Println(response)
-		return false
-	}
-
-	response, err = dbgp.ParseInitXML(rawXmlData)
-
-	if err == nil {
-		fmt.Println(response)
-		return false
-	}
-
-	response, err = dbgp.ParseNotifyXML(rawXmlData)
-
-	if err == nil {
-		fmt.Println(response)
-		return true
-	}
-
-	response, err = dbgp.ParseStreamXML(rawXmlData)
-
-	if err == nil {
-		fmt.Println(response)
-		return true
-	}
-
-	return false
-}
-
 func handleConnection(c net.Conn, rl *readline.Instance) {
 	var lastCommand string
 
@@ -65,7 +31,10 @@ func handleConnection(c net.Conn, rl *readline.Instance) {
 			fmt.Printf("%s\n", Faint(response))
 		}
 
-		if formatXML(response) == true {
+		formatted, moreResults := reader.FormatXML(response)
+		fmt.Println(formatted)
+
+		if moreResults {
 			continue
 		}
 

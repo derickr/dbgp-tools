@@ -23,7 +23,7 @@ type Notify struct {
 	Breakpoint  Breakpoint `xml:"breakpoint"`
 }
 
-func ParseNotifyXML(rawXmlData string) (Notify, error) {
+func (dbgp *dbgpReader) parseNotifyXML(rawXmlData string) (Notify, error) {
 	notify := Notify{}
 
 	reader := strings.NewReader(rawXmlData)

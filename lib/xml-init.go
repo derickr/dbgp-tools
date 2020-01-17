@@ -51,7 +51,7 @@ type Init struct {
 	Copyright       Copyright `xml:"copyright"`
 }
 
-func ParseInitXML(rawXmlData string) (Init, error) {
+func (dbgp *dbgpReader) parseInitXML(rawXmlData string) (Init, error) {
 	init := Init{}
 
 	reader := strings.NewReader(rawXmlData)

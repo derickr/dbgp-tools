@@ -23,7 +23,7 @@ type Stream struct {
 	Value       string   `xml:",cdata"`
 }
 
-func ParseStreamXML(rawXmlData string) (Stream, error) {
+func (dbgp *dbgpReader) parseStreamXML(rawXmlData string) (Stream, error) {
 	stream := Stream{}
 
 	reader := strings.NewReader(rawXmlData)

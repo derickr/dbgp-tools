@@ -85,3 +85,33 @@ func (dbgp *dbgpReader) SendCommand(line string) error {
 
 	return nil
 }
+
+func (dbgp *dbgpReader) FormatXML(rawXmlData string) (fmt.Stringer, bool) {
+	var response fmt.Stringer
+
+	response, err := dbgp.parseResponseXML(rawXmlData)
+
+	if err == nil {
+		return response, false
+	}
+
+	response, err = dbgp.parseInitXML(rawXmlData)
+
+	if err == nil {
+		return response, false
+	}
+
+	response, err = dbgp.parseNotifyXML(rawXmlData)
+
+	if err == nil {
+		return response, true
+	}
+
+	response, err = dbgp.parseStreamXML(rawXmlData)
+
+	if err == nil {
+		return response, true
+	}
+
+	return Stream{}, false
+}

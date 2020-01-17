@@ -119,7 +119,7 @@ type Response struct {
 	Value string `xml:",cdata"`
 }
 
-func ParseResponseXML(rawXmlData string) (Response, error) {
+func (dbgp *dbgpReader) parseResponseXML(rawXmlData string) (Response, error) {
 	response := Response{}
 
 	reader := strings.NewReader(rawXmlData)
