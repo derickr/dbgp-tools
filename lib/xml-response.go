@@ -218,7 +218,11 @@ func formatSource(response Response) string {
 		value, _ = base64.StdEncoding.DecodeString(string(value))
 	}
 
-	lines := strings.Split(strings.TrimSpace(string(value)), "\n")
+	if len(value) == 0 {
+		return fmt.Sprintf("%s | %s\n", Black(response.TID), Bold(Red("The result was empty")))
+	}
+
+	lines := strings.Split(strings.TrimRight(string(value), " \n"), "\n")
 
 	for i, line := range lines {
 		content += fmt.Sprintf("%4d", Bold(Green((i+response.LastSourceBegin)))) + " " + line + "\n"
