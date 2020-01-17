@@ -5,20 +5,24 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strconv"
 	"strings"
 )
 
 type dbgpReader struct {
-	reader  *bufio.Reader
-	writer  io.Writer
-	counter int
+	reader          *bufio.Reader
+	writer          io.Writer
+	counter         int
+	lastSourceBegin int
 }
 
 func NewDbgpReader(c net.Conn) *dbgpReader {
 	var tmp dbgpReader
+
 	tmp.reader = bufio.NewReader(c)
 	tmp.writer = c
 	tmp.counter = 1
+	tmp.lastSourceBegin = 1
 
 	return &tmp
 }
@@ -60,10 +64,32 @@ func (dbgp *dbgpReader) injectIIfNeeded(parts []string) []string {
 	return newParts
 }
 
+func (dbgp *dbgpReader) storeSourceBeginIfPresent(parts []string) []string {
+	s_found := false
+
+	dbgp.lastSourceBegin = 1
+
+	for _, item := range parts {
+		if s_found {
+			value, err := strconv.Atoi(item)
+			if err == nil && value > 0 {
+				dbgp.lastSourceBegin = value
+			}
+			s_found = false
+		}
+		if item == "-b" {
+			s_found = true
+		}
+	}
+
+	return parts
+}
+
 func (dbgp *dbgpReader) processLine(line string) string {
 	parts := strings.Split(strings.TrimSpace(line), " ")
 
 	parts = dbgp.injectIIfNeeded(parts)
+	parts = dbgp.storeSourceBeginIfPresent(parts)
 
 	return strings.Join(parts, " ")
 }

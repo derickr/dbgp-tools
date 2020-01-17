@@ -117,6 +117,8 @@ type Response struct {
 	Property    []Property   `xml:"property,omitempty"`
 
 	Value string `xml:",cdata"`
+
+	LastSourceBegin int
 }
 
 func (dbgp *dbgpReader) parseResponseXML(rawXmlData string) (Response, error) {
@@ -129,6 +131,7 @@ func (dbgp *dbgpReader) parseResponseXML(rawXmlData string) (Response, error) {
 
 	err := decoder.Decode(&response)
 
+	response.LastSourceBegin = dbgp.lastSourceBegin
 	if err != nil {
 		return response, err
 	}
@@ -218,7 +221,7 @@ func formatSource(response Response) string {
 	lines := strings.Split(strings.TrimSpace(string(value)), "\n")
 
 	for i, line := range lines {
-		content += fmt.Sprintf("%4d", Bold(Green((i+1)))) + " " + line + "\n"
+		content += fmt.Sprintf("%4d", Bold(Green((i+response.LastSourceBegin)))) + " " + line + "\n"
 	}
 
 	return content
