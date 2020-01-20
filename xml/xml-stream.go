@@ -1,12 +1,10 @@
-package dbgp
+package dbgpXml
 
 import (
 	"encoding/base64"
 	"encoding/xml"
 	"fmt"
 	. "github.com/logrusorgru/aurora" // WTFPL
-	"golang.org/x/net/html/charset"
-	"strings"
 )
 
 /*
@@ -21,23 +19,6 @@ type Stream struct {
 	Type        string   `xml:"type,attr"`
 	Encoding    string   `xml:"encoding,attr"`
 	Value       string   `xml:",cdata"`
-}
-
-func (dbgp *dbgpReader) parseStreamXML(rawXmlData string) (Stream, error) {
-	stream := Stream{}
-
-	reader := strings.NewReader(rawXmlData)
-
-	decoder := xml.NewDecoder(reader)
-	decoder.CharsetReader = charset.NewReaderLabel
-
-	err := decoder.Decode(&stream)
-
-	if err != nil {
-		return stream, err
-	}
-
-	return stream, nil
 }
 
 func (stream Stream) String() string {

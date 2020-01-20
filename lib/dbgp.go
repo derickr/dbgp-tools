@@ -2,7 +2,10 @@ package dbgp
 
 import (
 	"bufio"
+	"encoding/xml"
 	"fmt"
+	"github.com/xdebug/dbgp-tools/xml"
+	"golang.org/x/net/html/charset"
 	"io"
 	"net"
 	"strconv"
@@ -25,6 +28,75 @@ func NewDbgpReader(c net.Conn) *dbgpReader {
 	tmp.lastSourceBegin = 1
 
 	return &tmp
+}
+
+func (dbgp *dbgpReader) parseInitXML(rawXmlData string) (dbgpXml.Init, error) {
+	init := dbgpXml.Init{}
+
+	reader := strings.NewReader(rawXmlData)
+
+	decoder := xml.NewDecoder(reader)
+	decoder.CharsetReader = charset.NewReaderLabel
+
+	err := decoder.Decode(&init)
+
+	if err != nil {
+		return init, err
+	}
+
+	return init, nil
+}
+
+func (dbgp *dbgpReader) parseNotifyXML(rawXmlData string) (dbgpXml.Notify, error) {
+	notify := dbgpXml.Notify{}
+
+	reader := strings.NewReader(rawXmlData)
+
+	decoder := xml.NewDecoder(reader)
+	decoder.CharsetReader = charset.NewReaderLabel
+
+	err := decoder.Decode(&notify)
+
+	if err != nil {
+		return notify, err
+	}
+
+	return notify, nil
+}
+
+func (dbgp *dbgpReader) parseResponseXML(rawXmlData string) (dbgpXml.Response, error) {
+	response := dbgpXml.Response{}
+
+	reader := strings.NewReader(rawXmlData)
+
+	decoder := xml.NewDecoder(reader)
+	decoder.CharsetReader = charset.NewReaderLabel
+
+	err := decoder.Decode(&response)
+
+	response.LastSourceBegin = dbgp.lastSourceBegin
+	if err != nil {
+		return response, err
+	}
+
+	return response, nil
+}
+
+func (dbgp *dbgpReader) parseStreamXML(rawXmlData string) (dbgpXml.Stream, error) {
+	stream := dbgpXml.Stream{}
+
+	reader := strings.NewReader(rawXmlData)
+
+	decoder := xml.NewDecoder(reader)
+	decoder.CharsetReader = charset.NewReaderLabel
+
+	err := decoder.Decode(&stream)
+
+	if err != nil {
+		return stream, err
+	}
+
+	return stream, nil
 }
 
 func (dbgp *dbgpReader) ReadResponse() (string, error) {
@@ -139,5 +211,5 @@ func (dbgp *dbgpReader) FormatXML(rawXmlData string) (fmt.Stringer, bool) {
 		return response, true
 	}
 
-	return Stream{}, false
+	return response, false
 }

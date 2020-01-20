@@ -1,5 +1,7 @@
 debugclient/debugclient
 debugclient/debugclient.exe
-debugclient/*.sw?
-lib/*.sw?
-proxy/*.sw?
+*.sw?
+*/*.sw?
+*/*/*.sw?
+proxy/proxy
+proxy/proxy.exe

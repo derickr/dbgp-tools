@@ -1,11 +1,11 @@
-package dbgp
+package dbgpXml
 
 import (
 	"encoding/xml"
 	"fmt"
 	. "github.com/logrusorgru/aurora" // WTFPL
-	"golang.org/x/net/html/charset"
-	"strings"
+	//	"golang.org/x/net/html/charset"
+	//	"strings"
 )
 
 /*
@@ -49,23 +49,6 @@ type Init struct {
 	Author          Author    `xml:"author"`
 	URL             URL       `xml:"url"`
 	Copyright       Copyright `xml:"copyright"`
-}
-
-func (dbgp *dbgpReader) parseInitXML(rawXmlData string) (Init, error) {
-	init := Init{}
-
-	reader := strings.NewReader(rawXmlData)
-
-	decoder := xml.NewDecoder(reader)
-	decoder.CharsetReader = charset.NewReaderLabel
-
-	err := decoder.Decode(&init)
-
-	if err != nil {
-		return init, err
-	}
-
-	return init, nil
 }
 
 func (init Init) String() string {

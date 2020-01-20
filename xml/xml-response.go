@@ -1,11 +1,10 @@
-package dbgp
+package dbgpXml
 
 import (
 	"encoding/base64"
 	"encoding/xml"
 	"fmt"
 	. "github.com/logrusorgru/aurora" // WTFPL
-	"golang.org/x/net/html/charset"
 	"strings"
 )
 
@@ -119,24 +118,6 @@ type Response struct {
 	Value string `xml:",cdata"`
 
 	LastSourceBegin int
-}
-
-func (dbgp *dbgpReader) parseResponseXML(rawXmlData string) (Response, error) {
-	response := Response{}
-
-	reader := strings.NewReader(rawXmlData)
-
-	decoder := xml.NewDecoder(reader)
-	decoder.CharsetReader = charset.NewReaderLabel
-
-	err := decoder.Decode(&response)
-
-	response.LastSourceBegin = dbgp.lastSourceBegin
-	if err != nil {
-		return response, err
-	}
-
-	return response, nil
 }
 
 func formatContext(tid string, context Context) string {

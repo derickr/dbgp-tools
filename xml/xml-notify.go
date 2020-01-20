@@ -1,11 +1,9 @@
-package dbgp
+package dbgpXml
 
 import (
 	"encoding/xml"
 	"fmt"
 	. "github.com/logrusorgru/aurora" // WTFPL
-	"golang.org/x/net/html/charset"
-	"strings"
 )
 
 /*
@@ -21,23 +19,6 @@ type Notify struct {
 	XmlNSXdebug string     `xml:"xdebug,attr"`
 	Name        string     `xml:"name,attr"`
 	Breakpoint  Breakpoint `xml:"breakpoint"`
-}
-
-func (dbgp *dbgpReader) parseNotifyXML(rawXmlData string) (Notify, error) {
-	notify := Notify{}
-
-	reader := strings.NewReader(rawXmlData)
-
-	decoder := xml.NewDecoder(reader)
-	decoder.CharsetReader = charset.NewReaderLabel
-
-	err := decoder.Decode(&notify)
-
-	if err != nil {
-		return notify, err
-	}
-
-	return notify, nil
 }
 
 func (notify Notify) String() string {

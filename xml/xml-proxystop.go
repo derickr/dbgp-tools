@@ -1,0 +1,57 @@
+package dbgpXml
+
+import (
+	"bytes"
+	"encoding/xml"
+)
+
+/*
+ */
+type ProxyStop struct {
+	XMLName     xml.Name        `xml:"proxystop"`
+	XmlNS       string          `xml:"xmlns,attr"`
+	XmlNSXdebug string          `xml:"xmlns:xdebug,attr"`
+	Success     string          `xml:"success,attr"`
+	IDEKey      string          `xml:"idekey,attr"`
+	Error       *ProxyInitError `xml:"error,omitempty"`
+}
+
+func NewProxyStop(success bool, ideKey string, stopError *ProxyInitError) *ProxyStop {
+	successStr := "1"
+	if !success {
+		successStr = "0"
+	}
+
+	return &ProxyStop{
+		XmlNS:       "urn:debugger_protocol_v1",
+		XmlNSXdebug: "https://xdebug.org/dbgp/xdebug",
+		Success:     successStr,
+		IDEKey:      ideKey,
+		Error:       stopError,
+	}
+}
+
+func (proxyStop *ProxyStop) AsXML() (string, error) {
+	var output bytes.Buffer
+
+	encoder := xml.NewEncoder(&output)
+
+	err := encoder.Encode(proxyStop)
+
+	if err != nil {
+		return "", err
+	}
+
+	return xml.Header + output.String(), nil
+}
+
+/*
+func (init Init) String() string {
+	return fmt.Sprintf("DBGp/%s: %s %s — For %s %s\nDebugging %v (ID: %s/%s)",
+		Bold(Green(init.ProtocolVersion)),
+		Bold("Xdebug"), Bold(Green(init.Engine.Version)),
+		Bold(init.Language), Bold(Green(init.LanguageVersion)),
+		Bold(BrightYellow(init.FileURI)),
+		BrightYellow(init.AppID), BrightYellow(init.IDEKey))
+}
+*/
