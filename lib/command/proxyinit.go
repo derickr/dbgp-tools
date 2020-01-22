@@ -47,6 +47,8 @@ func CreateProxyInit(ipAddress string, connectionList *connections.ConnectionLis
 		if expectValue {
 			expectValue = false
 			switch expectValueFor {
+			case "-i":
+				/* ignore */
 			case "-p":
 				port, err := strconv.Atoi(value)
 				if err != nil {
@@ -60,7 +62,7 @@ func CreateProxyInit(ipAddress string, connectionList *connections.ConnectionLis
 					piCommand.multipleSupported = true
 				}
 			default:
-				return nil, fmt.Errorf("Argument '%s' is not understood", value)
+				return nil, fmt.Errorf("Unknown argument '%s' (with value '%s')", expectValueFor, value)
 			}
 		} else {
 			expectValueFor = value

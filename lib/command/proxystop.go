@@ -42,10 +42,12 @@ func CreateProxyStop(connectionList *connections.ConnectionList, arguments []str
 		if expectValue {
 			expectValue = false
 			switch expectValueFor {
+			case "-i":
+				/* ignore */
 			case "-k":
 				piCommand.ideKey = value
 			default:
-				return nil, fmt.Errorf("Argument '%s' is not understood", value)
+				return nil, fmt.Errorf("Unknown argument '%s' (with value '%s')", expectValueFor, value)
 			}
 		} else {
 			expectValueFor = value

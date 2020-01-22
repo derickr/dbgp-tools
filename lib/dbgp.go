@@ -12,6 +12,11 @@ import (
 	"strings"
 )
 
+type Response interface {
+	String() string
+	IsSuccess() bool
+}
+
 type dbgpReader struct {
 	reader          *bufio.Reader
 	writer          io.Writer
@@ -32,6 +37,23 @@ func NewDbgpReader(c net.Conn) *dbgpReader {
 
 func (dbgp *dbgpReader) parseInitXML(rawXmlData string) (dbgpXml.Init, error) {
 	init := dbgpXml.Init{}
+
+	reader := strings.NewReader(rawXmlData)
+
+	decoder := xml.NewDecoder(reader)
+	decoder.CharsetReader = charset.NewReaderLabel
+
+	err := decoder.Decode(&init)
+
+	if err != nil {
+		return init, err
+	}
+
+	return init, nil
+}
+
+func (dbgp *dbgpReader) parseProxyInitXML(rawXmlData string) (dbgpXml.ProxyInit, error) {
+	init := dbgpXml.ProxyInit{}
 
 	reader := strings.NewReader(rawXmlData)
 
@@ -184,8 +206,8 @@ func (dbgp *dbgpReader) SendCommand(line string) error {
 	return nil
 }
 
-func (dbgp *dbgpReader) FormatXML(rawXmlData string) (fmt.Stringer, bool) {
-	var response fmt.Stringer
+func (dbgp *dbgpReader) FormatXML(rawXmlData string) (Response, bool) {
+	var response Response
 
 	response, err := dbgp.parseResponseXML(rawXmlData)
 
@@ -209,6 +231,12 @@ func (dbgp *dbgpReader) FormatXML(rawXmlData string) (fmt.Stringer, bool) {
 
 	if err == nil {
 		return response, true
+	}
+
+	response, err = dbgp.parseProxyInitXML(rawXmlData)
+
+	if err == nil {
+		return response, false
 	}
 
 	return response, false

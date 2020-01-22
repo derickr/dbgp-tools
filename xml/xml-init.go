@@ -51,6 +51,10 @@ type Init struct {
 	Copyright       Copyright `xml:"copyright"`
 }
 
+func (init Init) IsSuccess() bool {
+	return true
+}
+
 func (init Init) String() string {
 	return fmt.Sprintf("DBGp/%s: %s %s — For %s %s\nDebugging %v (ID: %s/%s)",
 		Bold(Green(init.ProtocolVersion)),

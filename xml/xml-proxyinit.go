@@ -3,6 +3,8 @@ package dbgpXml
 import (
 	"bytes"
 	"encoding/xml"
+	"fmt"
+	. "github.com/logrusorgru/aurora" // WTFPL
 	"strconv"
 )
 
@@ -25,7 +27,7 @@ type ProxyInit struct {
 	XMLName     xml.Name        `xml:"proxyinit"`
 	XmlNS       string          `xml:"xmlns,attr"`
 	XmlNSXdebug string          `xml:"xmlns:xdebug,attr"`
-	Success     string          `xml:"success,attr"`
+	Success     int             `xml:"success,attr"`
 	IDEKey      string          `xml:"idekey,attr"`
 	Address     string          `xml:"address,attr"`
 	Port        string          `xml:"port,attr"`
@@ -33,9 +35,9 @@ type ProxyInit struct {
 }
 
 func NewProxyInit(success bool, ideKey string, address string, port int, initError *ProxyInitError) *ProxyInit {
-	successStr := "1"
+	successStr := 1
 	if !success {
-		successStr = "0"
+		successStr = 0
 	}
 
 	return &ProxyInit{
@@ -63,13 +65,14 @@ func (proxyInit *ProxyInit) AsXML() (string, error) {
 	return xml.Header + output.String(), nil
 }
 
-/*
-func (init Init) String() string {
-	return fmt.Sprintf("DBGp/%s: %s %s — For %s %s\nDebugging %v (ID: %s/%s)",
-		Bold(Green(init.ProtocolVersion)),
-		Bold("Xdebug"), Bold(Green(init.Engine.Version)),
-		Bold(init.Language), Bold(Green(init.LanguageVersion)),
-		Bold(BrightYellow(init.FileURI)),
-		BrightYellow(init.AppID), BrightYellow(init.IDEKey))
+func (init ProxyInit) IsSuccess() bool {
+	return !! (init.Success == 1)
 }
-*/
+
+func (init ProxyInit) String() string {
+	if init.Success == 0 {
+		return fmt.Sprintf("%s | %s: %s\n", Yellow(Bold("proxyinit")), Bold(Red("failure")), BrightRed(init.Error.Message))
+	} else {
+		return fmt.Sprintf("%s | %s\n", Yellow(Bold("proxyinit")), Bold(Green("success")))
+	}
+}

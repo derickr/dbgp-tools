@@ -21,6 +21,10 @@ type Stream struct {
 	Value       string   `xml:",cdata"`
 }
 
+func (stream Stream) IsSuccess() bool {
+	return true
+}
+
 func (stream Stream) String() string {
 	output := fmt.Sprintf("%s\n", Bold(BrightYellow(stream.Type)))
 

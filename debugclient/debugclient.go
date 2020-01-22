@@ -12,6 +12,7 @@ import (
 	"net"
 	"os"
 	"os/user"
+	"strconv"
 )
 
 func handleConnection(c net.Conn, rl *readline.Instance) {
@@ -58,12 +59,73 @@ func handleConnection(c net.Conn, rl *readline.Instance) {
 	fmt.Printf("Disconnect\n")
 }
 
+func registerWithProxy(address string, idekey string) error {
+	conn, err := net.Dial("tcp", address);
+
+	if err != nil {
+		return err
+	}
+
+	dbgp := dbgp.NewDbgpReader(conn)
+
+	command := "proxyinit -m 1 -k " + idekey + " -p " + strconv.Itoa(port)
+
+	dbgp.SendCommand(command)
+
+	response, err := dbgp.ReadResponse()
+
+	if showXML {
+		fmt.Printf("%s\n", Faint(response))
+	}
+
+	formatted, _ := dbgp.FormatXML(response)
+	fmt.Println(formatted)
+
+	if !formatted.IsSuccess() {
+		return fmt.Errorf("proxyinit failed")
+	}
+
+	return nil
+}
+
+func unregisterWithProxy(address string, idekey string) error {
+	conn, err := net.Dial("tcp", address);
+
+	if err != nil {
+		return err
+	}
+
+	dbgp := dbgp.NewDbgpReader(conn)
+
+	command := "proxystop -k " + idekey
+
+	dbgp.SendCommand(command)
+
+	response, err := dbgp.ReadResponse()
+
+	if showXML {
+		fmt.Printf("%s\n", Faint(response))
+	}
+
+	formatted, _ := dbgp.FormatXML(response)
+	fmt.Println(formatted)
+
+	if !formatted.IsSuccess() {
+		return fmt.Errorf("proxystop failed")
+	}
+
+	return nil
+}
+
 var (
 	help    = false
+	key     = ""
 	once    = false
 	port    = 9000
+	proxy   = "none"
 	showXML = false
 	version = false
+	unproxy = false
 )
 
 func printStartUp() {
@@ -74,6 +136,9 @@ func printStartUp() {
 func handleArguments() {
 	getopt.Flag(&help, 'h', "Show this help")
 	getopt.Flag(&port, 'p', "Specify the port to listen on")
+	getopt.FlagLong(&key, "proxy-key", 'k', "The IDE Key to use with the DBGp proxy")
+	getopt.FlagLong(&proxy, "proxy-init", 'i', "Register with a DBGp proxy")
+	getopt.FlagLong(&unproxy, "proxy-stop", 'u', "Unregister with a DBGp proxy")
 	getopt.Flag(&version, 'v', "Show version number and exit")
 	getopt.Flag(&showXML, 'x', "Show protocol XML")
 	getopt.Flag(&once, '1', "Debug once and then exit")
@@ -86,6 +151,27 @@ func handleArguments() {
 	}
 	if version {
 		os.Exit(0)
+	}
+	if proxy != "none" {
+		if key == "" {
+			getopt.PrintUsage(os.Stdout)
+			os.Exit(1)
+		}
+
+		if unproxy {
+			err := unregisterWithProxy(proxy, key)
+			if err != nil {
+				fmt.Printf("%s: %s\n", BrightRed(Bold("Error unregistering with proxy")), BrightRed(err.Error()))
+				os.Exit(2)
+			}
+			os.Exit(0)
+		}
+
+		err := registerWithProxy(proxy, key)
+		if err != nil {
+			fmt.Printf("%s: %s\n", BrightRed(Bold("Error registering with proxy")), BrightRed(err.Error()))
+			os.Exit(2)
+		}
 	}
 }
 

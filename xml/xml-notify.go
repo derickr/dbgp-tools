@@ -21,6 +21,10 @@ type Notify struct {
 	Breakpoint  Breakpoint `xml:"breakpoint"`
 }
 
+func (notify Notify) IsSuccess() bool {
+	return true
+}
+
 func (notify Notify) String() string {
 	output := fmt.Sprintf("%s\n", Bold(BrightYellow(notify.Name)))
 
