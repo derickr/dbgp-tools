@@ -5,6 +5,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/bitbored/go-ansicon"  // BSD-3
 	"github.com/chzyer/readline"      // MIT
 	. "github.com/logrusorgru/aurora" // WTFPL
 	"github.com/pborman/getopt/v2"    // BSD-3
@@ -20,7 +21,7 @@ func handleConnection(c net.Conn, rl *readline.Instance) {
 
 	reader := dbgp.NewDbgpReader(c)
 
-	fmt.Printf("Connect from %s\n", c.RemoteAddr().String())
+	fmt.Fprintf(output, "Connect from %s\n", c.RemoteAddr().String())
 
 	for {
 		response, err := reader.ReadResponse()
@@ -29,11 +30,11 @@ func handleConnection(c net.Conn, rl *readline.Instance) {
 		}
 
 		if showXML {
-			fmt.Printf("%s\n", Faint(response))
+			fmt.Fprintf(output, "%s\n", Faint(response))
 		}
 
 		formatted, moreResults := reader.FormatXML(response)
-		fmt.Println(formatted)
+		fmt.Fprintln(output, formatted)
 
 		if moreResults {
 			continue
@@ -56,7 +57,7 @@ func handleConnection(c net.Conn, rl *readline.Instance) {
 		lastCommand = line
 	}
 	c.Close()
-	fmt.Printf("Disconnect\n")
+	fmt.Fprintf(output, "Disconnect\n")
 }
 
 func registerWithProxy(address string, idekey string) error {
@@ -75,11 +76,11 @@ func registerWithProxy(address string, idekey string) error {
 	response, err := dbgp.ReadResponse()
 
 	if showXML {
-		fmt.Printf("%s\n", Faint(response))
+		fmt.Fprintf(output, "%s\n", Faint(response))
 	}
 
 	formatted, _ := dbgp.FormatXML(response)
-	fmt.Println(formatted)
+	fmt.Fprintln(output, formatted)
 
 	if !formatted.IsSuccess() {
 		return fmt.Errorf("proxyinit failed")
@@ -104,11 +105,11 @@ func unregisterWithProxy(address string, idekey string) error {
 	response, err := dbgp.ReadResponse()
 
 	if showXML {
-		fmt.Printf("%s\n", Faint(response))
+		fmt.Fprintf(output, "%s\n", Faint(response))
 	}
 
 	formatted, _ := dbgp.FormatXML(response)
-	fmt.Println(formatted)
+	fmt.Fprintln(output, formatted)
 
 	if !formatted.IsSuccess() {
 		return fmt.Errorf("proxystop failed")
@@ -126,11 +127,12 @@ var (
 	showXML = false
 	version = false
 	unproxy = false
+	output  = ansicon.Convert(os.Stdout)
 )
 
 func printStartUp() {
-	fmt.Println("Xdebug Simple DBGp client (Go 0.1)")
-	fmt.Println("Copyright 2019-2020 by Derick Rethans")
+	fmt.Fprintln(output, "Xdebug Simple DBGp client (Go 0.1)")
+	fmt.Fprintln(output, "Copyright 2019-2020 by Derick Rethans")
 }
 
 func handleArguments() {
@@ -161,7 +163,7 @@ func handleArguments() {
 		if unproxy {
 			err := unregisterWithProxy(proxy, key)
 			if err != nil {
-				fmt.Printf("%s: %s\n", BrightRed(Bold("Error unregistering with proxy")), BrightRed(err.Error()))
+				fmt.Fprintf(output, "%s: %s\n", BrightRed(Bold("Error unregistering with proxy")), BrightRed(err.Error()))
 				os.Exit(2)
 			}
 			os.Exit(0)
@@ -169,7 +171,7 @@ func handleArguments() {
 
 		err := registerWithProxy(proxy, key)
 		if err != nil {
-			fmt.Printf("%s: %s\n", BrightRed(Bold("Error registering with proxy")), BrightRed(err.Error()))
+			fmt.Fprintf(output, "%s: %s\n", BrightRed(Bold("Error registering with proxy")), BrightRed(err.Error()))
 			os.Exit(2)
 		}
 	}
@@ -314,6 +316,7 @@ func initReadline() *readline.Instance {
 
 	rl, err := readline.NewEx(&readline.Config{
 		Prompt:       fmt.Sprintf("%s", Bold("(cmd) ")),
+		Stdout:       output,
 		HistoryFile:  dir + "/.xdebug-debugclient.hist",
 		AutoComplete: completer,
 	})
@@ -331,12 +334,12 @@ func main() {
 	portString := fmt.Sprintf(":%v", port)
 	l, err := net.Listen("tcp", portString)
 	if err != nil {
-		fmt.Printf("%v", err)
+		fmt.Fprintf(output, "%v", err)
 		return
 	}
 	defer l.Close()
 
-	fmt.Printf("\nWaiting for debug server to connect on port %d.\n", port)
+	fmt.Fprintf(output, "\nWaiting for debug server to connect on port %d.\n", port)
 
 	rl := initReadline()
 	defer rl.Close()
@@ -344,7 +347,7 @@ func main() {
 	for {
 		c, err := l.Accept()
 		if err != nil {
-			fmt.Println(err)
+			fmt.Fprintln(output, err)
 			return
 		}
 
