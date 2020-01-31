@@ -366,7 +366,7 @@ func main() {
 	}
 	defer l.Close()
 
-	fmt.Fprintf(output, "\nWaiting for debug server to connect on port %d.\n", port)
+	fmt.Fprintf(output, "Waiting for debug server to connect on port %d.\n", port)
 
 	rl := initReadline()
 	defer rl.Close()
