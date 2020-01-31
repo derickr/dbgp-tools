@@ -16,6 +16,23 @@ import (
 	"strconv"
 )
 
+func displayHelp() {
+	fmt.Fprintf(output, `
+This is a DBGp client. DBGp is a common debugging protocol described at
+https://xdebug.org/docs/dbgp
+
+The client reads DBGp commands on the command line, sends them to the
+DBGp debugging engine, reads the XML response, and formats that response
+by interpreting the XML.
+
+A short overview of commands is also available in the online
+documentation at https://xdebug.org/docs/debugclient
+
+You can use <tab> for auto completing commands, and find out which one
+exist.
+`)
+}
+
 func handleConnection(c net.Conn, rl *readline.Instance) {
 	var lastCommand string
 
@@ -40,9 +57,15 @@ func handleConnection(c net.Conn, rl *readline.Instance) {
 			continue
 		}
 
+ReadInput:
 		line, err := rl.Readline()
 		if err != nil { // io.EOF
 			break
+		}
+
+		if line == "help" {
+			displayHelp();
+			goto ReadInput
 		}
 
 		if line == "" {
@@ -308,6 +331,8 @@ var completer = readline.NewPrefixCompleter(
 
 	readline.PcItem("stop"),
 	readline.PcItem("detach"),
+
+	readline.PcItem("help"),
 )
 
 func initReadline() *readline.Instance {
