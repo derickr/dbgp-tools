@@ -16,6 +16,8 @@ import (
 	"strconv"
 )
 
+var clientVersion = "0.1"
+
 func displayHelp() {
 	fmt.Fprintf(output, `
 This is a DBGp client. DBGp is a common debugging protocol described at
@@ -154,8 +156,8 @@ var (
 )
 
 func printStartUp() {
-	fmt.Fprintln(output, "Xdebug Simple DBGp client (Go 0.1)")
-	fmt.Fprintln(output, "Copyright 2019-2020 by Derick Rethans")
+	fmt.Fprintf(output, "Xdebug Simple DBGp client (%s)\n", Bold(clientVersion))
+	fmt.Fprintf(output, "Copyright 2019-2020 by Derick Rethans\n\n")
 }
 
 func handleArguments() {
