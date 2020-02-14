@@ -163,11 +163,7 @@ func printStartUp() {
 func handleArguments() {
 	getopt.Flag(&help, 'h', "Show this help")
 	getopt.Flag(&port, 'p', "Specify the port to listen on")
-	/*
-	getopt.FlagLong(&key, "proxy-key", 'k', "The IDE Key to use with the DBGp proxy")
-	getopt.FlagLong(&proxy, "proxy-init", 'i', "Register with a DBGp proxy")
-	getopt.FlagLong(&unproxy, "proxy-stop", 'u', "Unregister with a DBGp proxy")
-	*/
+	handleProxyFlags()
 	getopt.Flag(&version, 'v', "Show version number and exit")
 	getopt.Flag(&showXML, 'x', "Show protocol XML")
 	getopt.Flag(&once, '1', "Debug once and then exit")
@@ -181,27 +177,8 @@ func handleArguments() {
 	if version {
 		os.Exit(0)
 	}
-	if proxy != "none" {
-		if key == "" {
-			getopt.PrintUsage(os.Stdout)
-			os.Exit(1)
-		}
 
-		if unproxy {
-			err := unregisterWithProxy(proxy, key)
-			if err != nil {
-				fmt.Fprintf(output, "%s: %s\n", BrightRed(Bold("Error unregistering with proxy")), BrightRed(err.Error()))
-				os.Exit(2)
-			}
-			os.Exit(0)
-		}
-
-		err := registerWithProxy(proxy, key)
-		if err != nil {
-			fmt.Fprintf(output, "%s: %s\n", BrightRed(Bold("Error registering with proxy")), BrightRed(err.Error()))
-			os.Exit(2)
-		}
-	}
+	handleProxyArguments()
 }
 
 var completer = readline.NewPrefixCompleter(
