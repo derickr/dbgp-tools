@@ -69,6 +69,23 @@ func (dbgp *dbgpReader) parseProxyInitXML(rawXmlData string) (dbgpXml.ProxyInit,
 	return init, nil
 }
 
+func (dbgp *dbgpReader) parseProxyStopXML(rawXmlData string) (dbgpXml.ProxyStop, error) {
+	init := dbgpXml.ProxyStop{}
+
+	reader := strings.NewReader(rawXmlData)
+
+	decoder := xml.NewDecoder(reader)
+	decoder.CharsetReader = charset.NewReaderLabel
+
+	err := decoder.Decode(&init)
+
+	if err != nil {
+		return init, err
+	}
+
+	return init, nil
+}
+
 func (dbgp *dbgpReader) parseNotifyXML(rawXmlData string) (dbgpXml.Notify, error) {
 	notify := dbgpXml.Notify{}
 
@@ -239,5 +256,11 @@ func (dbgp *dbgpReader) FormatXML(rawXmlData string) (Response, bool) {
 		return response, false
 	}
 
-	return response, false
+	response, err = dbgp.parseProxyStopXML(rawXmlData)
+
+	if err == nil {
+		return response, false
+	}
+
+	return nil, false
 }
