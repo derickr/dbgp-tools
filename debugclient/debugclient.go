@@ -144,15 +144,15 @@ func unregisterWithProxy(address string, idekey string) error {
 }
 
 var (
-	help    = false
-	key     = ""
-	once    = false
-	port    = 9000
-	proxy   = "none"
-	showXML = false
-	version = false
-	unproxy = false
-	output  = ansicon.Convert(os.Stdout)
+	help       = false
+	once       = false
+	port       = 9000
+	proxy      = "localhost:9001"
+	register   = ""
+	showXML    = false
+	version    = false
+	unregister = ""
+	output     = ansicon.Convert(os.Stdout)
 )
 
 func printStartUp() {

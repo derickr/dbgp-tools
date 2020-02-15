@@ -27,8 +27,8 @@ func printStartUp() {
 
 func handleArguments() {
 	getopt.Flag(&help, 'h', "Show this help")
-	getopt.FlagLong(&clientAddress, "client", 'c', "Specify the address:port to listen on for IDE (client) connections")
-	getopt.FlagLong(&serverAddress, "server", 's', "Specify the address:port to listen on for debugger engine (server) connections")
+	getopt.FlagLong(&clientAddress, "client", 'c', "Specify the host:port to listen on for IDE (client) connections", "host:port")
+	getopt.FlagLong(&serverAddress, "server", 's', "Specify the host:port to listen on for debugger engine (server) connections", "host:port")
 	getopt.Flag(&version, 'v', "Show version number and exit")
 
 	getopt.Parse()
