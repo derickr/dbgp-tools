@@ -59,14 +59,14 @@ func handleConnection(c net.Conn, rl *readline.Instance) {
 			continue
 		}
 
-ReadInput:
+	ReadInput:
 		line, err := rl.Readline()
 		if err != nil { // io.EOF
 			break
 		}
 
 		if line == "help" {
-			displayHelp();
+			displayHelp()
 			goto ReadInput
 		}
 
@@ -86,7 +86,7 @@ ReadInput:
 }
 
 func registerWithProxy(address string, idekey string) error {
-	conn, err := net.Dial("tcp", address);
+	conn, err := net.Dial("tcp", address)
 
 	if err != nil {
 		return err
@@ -115,7 +115,7 @@ func registerWithProxy(address string, idekey string) error {
 }
 
 func unregisterWithProxy(address string, idekey string) error {
-	conn, err := net.Dial("tcp", address);
+	conn, err := net.Dial("tcp", address)
 
 	if err != nil {
 		return err

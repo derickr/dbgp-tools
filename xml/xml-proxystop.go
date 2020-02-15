@@ -48,7 +48,7 @@ func (proxyStop *ProxyStop) AsXML() (string, error) {
 }
 
 func (stop ProxyStop) IsSuccess() bool {
-	return !! (stop.Success == 1)
+	return !!(stop.Success == 1)
 }
 
 func (stop ProxyStop) String() string {

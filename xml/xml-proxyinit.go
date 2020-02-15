@@ -66,7 +66,7 @@ func (proxyInit *ProxyInit) AsXML() (string, error) {
 }
 
 func (init ProxyInit) IsSuccess() bool {
-	return !! (init.Success == 1)
+	return !!(init.Success == 1)
 }
 
 func (init ProxyInit) String() string {
