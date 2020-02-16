@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"encoding/xml"
 	"fmt"
-	"github.com/xdebug/dbgp-tools/xml"
+	"github.com/derickr/dbgp-tools/lib/xml"
 	"golang.org/x/net/html/charset"
 	"io"
 	"net"
@@ -17,15 +17,15 @@ type Response interface {
 	IsSuccess() bool
 }
 
-type dbgpReader struct {
+type dbgpClient struct {
 	reader          *bufio.Reader
 	writer          io.Writer
 	counter         int
 	lastSourceBegin int
 }
 
-func NewDbgpReader(c net.Conn) *dbgpReader {
-	var tmp dbgpReader
+func NewDbgpClient(c net.Conn) *dbgpClient {
+	var tmp dbgpClient
 
 	tmp.reader = bufio.NewReader(c)
 	tmp.writer = c
@@ -35,7 +35,7 @@ func NewDbgpReader(c net.Conn) *dbgpReader {
 	return &tmp
 }
 
-func (dbgp *dbgpReader) ParseInitXML(rawXmlData string) (dbgpXml.Init, error) {
+func (dbgp *dbgpClient) ParseInitXML(rawXmlData string) (dbgpXml.Init, error) {
 	init := dbgpXml.Init{}
 
 	reader := strings.NewReader(rawXmlData)
@@ -52,7 +52,7 @@ func (dbgp *dbgpReader) ParseInitXML(rawXmlData string) (dbgpXml.Init, error) {
 	return init, nil
 }
 
-func (dbgp *dbgpReader) parseProxyInitXML(rawXmlData string) (dbgpXml.ProxyInit, error) {
+func (dbgp *dbgpClient) parseProxyInitXML(rawXmlData string) (dbgpXml.ProxyInit, error) {
 	init := dbgpXml.ProxyInit{}
 
 	reader := strings.NewReader(rawXmlData)
@@ -69,7 +69,7 @@ func (dbgp *dbgpReader) parseProxyInitXML(rawXmlData string) (dbgpXml.ProxyInit,
 	return init, nil
 }
 
-func (dbgp *dbgpReader) parseProxyStopXML(rawXmlData string) (dbgpXml.ProxyStop, error) {
+func (dbgp *dbgpClient) parseProxyStopXML(rawXmlData string) (dbgpXml.ProxyStop, error) {
 	init := dbgpXml.ProxyStop{}
 
 	reader := strings.NewReader(rawXmlData)
@@ -86,7 +86,7 @@ func (dbgp *dbgpReader) parseProxyStopXML(rawXmlData string) (dbgpXml.ProxyStop,
 	return init, nil
 }
 
-func (dbgp *dbgpReader) parseNotifyXML(rawXmlData string) (dbgpXml.Notify, error) {
+func (dbgp *dbgpClient) parseNotifyXML(rawXmlData string) (dbgpXml.Notify, error) {
 	notify := dbgpXml.Notify{}
 
 	reader := strings.NewReader(rawXmlData)
@@ -103,7 +103,7 @@ func (dbgp *dbgpReader) parseNotifyXML(rawXmlData string) (dbgpXml.Notify, error
 	return notify, nil
 }
 
-func (dbgp *dbgpReader) parseResponseXML(rawXmlData string) (dbgpXml.Response, error) {
+func (dbgp *dbgpClient) parseResponseXML(rawXmlData string) (dbgpXml.Response, error) {
 	response := dbgpXml.Response{}
 
 	reader := strings.NewReader(rawXmlData)
@@ -121,7 +121,7 @@ func (dbgp *dbgpReader) parseResponseXML(rawXmlData string) (dbgpXml.Response, e
 	return response, nil
 }
 
-func (dbgp *dbgpReader) parseStreamXML(rawXmlData string) (dbgpXml.Stream, error) {
+func (dbgp *dbgpClient) parseStreamXML(rawXmlData string) (dbgpXml.Stream, error) {
 	stream := dbgpXml.Stream{}
 
 	reader := strings.NewReader(rawXmlData)
@@ -138,7 +138,7 @@ func (dbgp *dbgpReader) parseStreamXML(rawXmlData string) (dbgpXml.Stream, error
 	return stream, nil
 }
 
-func (dbgp *dbgpReader) ReadResponse() (string, error) {
+func (dbgp *dbgpClient) ReadResponse() (string, error) {
 	/* Read length */
 	_, err := dbgp.reader.ReadBytes('\000')
 
@@ -158,7 +158,7 @@ func (dbgp *dbgpReader) ReadResponse() (string, error) {
 	return string(data), nil
 }
 
-func (dbgp *dbgpReader) injectIIfNeeded(parts []string) []string {
+func (dbgp *dbgpClient) injectIIfNeeded(parts []string) []string {
 	for _, item := range parts {
 		if item == "-i" {
 			return parts
@@ -175,7 +175,7 @@ func (dbgp *dbgpReader) injectIIfNeeded(parts []string) []string {
 	return newParts
 }
 
-func (dbgp *dbgpReader) storeSourceBeginIfPresent(parts []string) []string {
+func (dbgp *dbgpClient) storeSourceBeginIfPresent(parts []string) []string {
 	s_found := false
 
 	dbgp.lastSourceBegin = 1
@@ -196,7 +196,7 @@ func (dbgp *dbgpReader) storeSourceBeginIfPresent(parts []string) []string {
 	return parts
 }
 
-func (dbgp *dbgpReader) processLine(line string) string {
+func (dbgp *dbgpClient) processLine(line string) string {
 	parts := strings.Split(strings.TrimSpace(line), " ")
 
 	parts = dbgp.injectIIfNeeded(parts)
@@ -205,7 +205,7 @@ func (dbgp *dbgpReader) processLine(line string) string {
 	return strings.Join(parts, " ")
 }
 
-func (dbgp *dbgpReader) SendCommand(line string) error {
+func (dbgp *dbgpClient) SendCommand(line string) error {
 	line = dbgp.processLine(line)
 
 	_, err := dbgp.writer.Write([]byte(line))
@@ -223,7 +223,7 @@ func (dbgp *dbgpReader) SendCommand(line string) error {
 	return nil
 }
 
-func (dbgp *dbgpReader) FormatXML(rawXmlData string) (Response, bool) {
+func (dbgp *dbgpClient) FormatXML(rawXmlData string) (Response, bool) {
 	var response Response
 
 	response, err := dbgp.parseResponseXML(rawXmlData)

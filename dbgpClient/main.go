@@ -1,6 +1,3 @@
-// Go offers built-in support for XML and XML-like
-// formats with the `encoding.xml` package.
-
 package main
 
 import (
@@ -9,7 +6,7 @@ import (
 	"github.com/chzyer/readline"      // MIT
 	. "github.com/logrusorgru/aurora" // WTFPL
 	"github.com/pborman/getopt/v2"    // BSD-3
-	"github.com/xdebug/dbgp-tools/lib"
+	"github.com/derickr/dbgp-tools/lib"
 	"net"
 	"os"
 	"os/user"
@@ -38,7 +35,7 @@ exist.
 func handleConnection(c net.Conn, rl *readline.Instance) {
 	var lastCommand string
 
-	reader := dbgp.NewDbgpReader(c)
+	reader := dbgp.NewDbgpClient(c)
 
 	fmt.Fprintf(output, "Connect from %s\n", c.RemoteAddr().String())
 
@@ -92,7 +89,7 @@ func registerWithProxy(address string, idekey string) error {
 		return err
 	}
 
-	dbgp := dbgp.NewDbgpReader(conn)
+	dbgp := dbgp.NewDbgpClient(conn)
 
 	command := "proxyinit -m 1 -k " + idekey + " -p " + strconv.Itoa(port)
 
@@ -121,7 +118,7 @@ func unregisterWithProxy(address string, idekey string) error {
 		return err
 	}
 
-	dbgp := dbgp.NewDbgpReader(conn)
+	dbgp := dbgp.NewDbgpClient(conn)
 
 	command := "proxystop -k " + idekey
 

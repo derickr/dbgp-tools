@@ -2,8 +2,8 @@ package command
 
 import (
 	"fmt"
-	"github.com/xdebug/dbgp-tools/lib/connections"
-	"github.com/xdebug/dbgp-tools/xml"
+	"github.com/derickr/dbgp-tools/lib/connections"
+	"github.com/derickr/dbgp-tools/lib/xml"
 	"strconv"
 )
 

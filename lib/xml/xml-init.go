@@ -4,8 +4,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	. "github.com/logrusorgru/aurora" // WTFPL
-	//	"golang.org/x/net/html/charset"
-	//	"strings"
 )
 
 /*

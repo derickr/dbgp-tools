@@ -3,12 +3,11 @@ package main
 import (
 	"fmt"
 	"github.com/pborman/getopt/v2" // BSD-3
-	"github.com/xdebug/dbgp-tools/lib/connections"
-	"github.com/xdebug/dbgp-tools/lib/proxy"
-	"github.com/xdebug/dbgp-tools/lib/server"
+	"github.com/derickr/dbgp-tools/lib/connections"
+	"github.com/derickr/dbgp-tools/lib/proxy"
+	"github.com/derickr/dbgp-tools/lib/server"
 	"net"
 	"os"
-	//	"os/user"
 	"os/signal"
 	"sync"
 )

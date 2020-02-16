@@ -1,7 +1,7 @@
-debugclient/debugclient
-debugclient/debugclient.exe
+dbgpClient/dbgpClient
+dbgpClient/dbgpClient.exe
 *.sw?
 */*.sw?
 */*/*.sw?
-proxy/proxy
-proxy/proxy.exe
+dbgpProxy/dbgpProxy
+dbgpProxy/pdbgpProxy.exe

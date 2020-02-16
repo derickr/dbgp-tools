@@ -3,23 +3,23 @@ package dbgp
 import (
 	"bufio"
 	"fmt"
-	"github.com/xdebug/dbgp-tools/lib/command"
-	"github.com/xdebug/dbgp-tools/lib/connections"
+	"github.com/derickr/dbgp-tools/lib/command"
+	"github.com/derickr/dbgp-tools/lib/connections"
 	"io"
 	"net"
 	"strconv"
 	"strings"
 )
 
-type commandReader struct {
+type dbgpServer struct {
 	connection     net.Conn
 	connectionList *connections.ConnectionList
 	reader         *bufio.Reader
 	writer         io.Writer
 }
 
-func NewCommandReader(c net.Conn, connectionList *connections.ConnectionList) *commandReader {
-	var tmp commandReader
+func NewDbgpServer(c net.Conn, connectionList *connections.ConnectionList) *dbgpServer {
+	var tmp dbgpServer
 
 	tmp.connection = c
 	tmp.connectionList = connectionList
@@ -29,7 +29,7 @@ func NewCommandReader(c net.Conn, connectionList *connections.ConnectionList) *c
 	return &tmp
 }
 
-func (dbgp *commandReader) parseLine(data string) (command.DbgpCommand, error) {
+func (dbgp *dbgpServer) parseLine(data string) (command.DbgpCommand, error) {
 	parts := strings.Split(data, " ")
 
 	switch parts[0] {
@@ -44,7 +44,7 @@ func (dbgp *commandReader) parseLine(data string) (command.DbgpCommand, error) {
 	return nil, fmt.Errorf("Don't understand command '%s'", parts)
 }
 
-func (dbgp *commandReader) ReadCommand() (command.DbgpCommand, error) {
+func (dbgp *dbgpServer) ReadCommand() (command.DbgpCommand, error) {
 	/* Read data */
 	data, err := dbgp.reader.ReadBytes('\000')
 
@@ -56,7 +56,7 @@ func (dbgp *commandReader) ReadCommand() (command.DbgpCommand, error) {
 	return dbgp.parseLine(strings.TrimRight(string(data), "\000"))
 }
 
-func (dbgp *commandReader) SendResponse(xml string) error {
+func (dbgp *dbgpServer) SendResponse(xml string) error {
 	_, err := dbgp.writer.Write([]byte(strconv.Itoa(len(xml)) + "\000" + xml + "\000"))
 
 	return err
