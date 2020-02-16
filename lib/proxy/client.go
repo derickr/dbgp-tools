@@ -3,7 +3,6 @@ package proxy
 import (
 	"fmt"
 	"github.com/xdebug/dbgp-tools/lib"
-	"github.com/xdebug/dbgp-tools/lib/command"
 	"github.com/xdebug/dbgp-tools/lib/connections"
 	"net"
 )
@@ -14,9 +13,6 @@ type ClientHandler struct {
 
 func NewClientHandler(connectionList *connections.ConnectionList) *ClientHandler {
 	return &ClientHandler{connectionList: connectionList}
-}
-
-func doProxyInit(picmd command.ProxyInitCommand, connectionList *connections.ConnectionList) {
 }
 
 func (handler *ClientHandler) Handle(conn net.Conn) error {

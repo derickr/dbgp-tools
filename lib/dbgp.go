@@ -35,7 +35,7 @@ func NewDbgpReader(c net.Conn) *dbgpReader {
 	return &tmp
 }
 
-func (dbgp *dbgpReader) parseInitXML(rawXmlData string) (dbgpXml.Init, error) {
+func (dbgp *dbgpReader) ParseInitXML(rawXmlData string) (dbgpXml.Init, error) {
 	init := dbgpXml.Init{}
 
 	reader := strings.NewReader(rawXmlData)
@@ -232,7 +232,7 @@ func (dbgp *dbgpReader) FormatXML(rawXmlData string) (Response, bool) {
 		return response, false
 	}
 
-	response, err = dbgp.parseInitXML(rawXmlData)
+	response, err = dbgp.ParseInitXML(rawXmlData)
 
 	if err == nil {
 		return response, false

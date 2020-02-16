@@ -69,7 +69,7 @@ func (server *Server) handleConnection(conn net.Conn, handler Handler) {
 	err := handler.Handle(conn)
 
 	if err != nil {
-		fmt.Printf("  -> Handler response error: %s\n", err)
+		fmt.Printf("  - Handler response error: %s\n", err)
 	}
 
 	fmt.Printf("- Closing %s connection from %s\n", server.serverType, conn.RemoteAddr())

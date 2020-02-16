@@ -50,10 +50,10 @@ func main() {
 
 	syncGroup := &sync.WaitGroup{}
 	clientServer := server.NewServer("client", resolveTCP(clientAddress), syncGroup)
-	//	serverServer := server.NewServer("server", resolveTCP(serverAddress), syncGroup)
+	serverServer := server.NewServer("server", resolveTCP(serverAddress), syncGroup)
 
 	go clientServer.Listen(proxy.NewClientHandler(ideConnectionList))
-	//	go serverServer.Listen(ideConnectionList)
+	go serverServer.Listen(proxy.NewServerHandler(ideConnectionList))
 
 	fmt.Println("Proxy started")
 
@@ -63,7 +63,7 @@ func main() {
 	fmt.Printf("Signal received: %s", <-signals)
 
 	clientServer.Stop()
-	//serverServer.Stop()
+	serverServer.Stop()
 	syncGroup.Wait()
 
 	fmt.Println("Proxy stopped")
