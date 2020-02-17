@@ -1,12 +1,13 @@
 package main
 
 import (
+	"crypto/tls"
 	"fmt"
-	"github.com/bitbored/go-ansicon"  // BSD-3
-	"github.com/chzyer/readline"      // MIT
+	"github.com/bitbored/go-ansicon" // BSD-3
+	"github.com/chzyer/readline"     // MIT
+	"github.com/derickr/dbgp-tools/lib"
 	. "github.com/logrusorgru/aurora" // WTFPL
 	"github.com/pborman/getopt/v2"    // BSD-3
-	"github.com/derickr/dbgp-tools/lib"
 	"net"
 	"os"
 	"os/user"
@@ -82,9 +83,35 @@ func handleConnection(c net.Conn, rl *readline.Instance) {
 	fmt.Fprintf(output, "Disconnect\n")
 }
 
-func registerWithProxy(address string, idekey string) error {
-	conn, err := net.Dial("tcp", address)
+func connectToProxy(address string) (net.Conn, error) {
+	var conn net.Conn
+	var err error
+	var cert tls.Certificate
 
+	if ssl {
+		cert, err = tls.LoadX509KeyPair("certs/client.pem", "certs/client.key")
+		if err != nil {
+			return nil, err
+		}
+		config := tls.Config{Certificates: []tls.Certificate{cert}, InsecureSkipVerify: true}
+		conn, err = tls.Dial("tcp", address, &config)
+
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		conn, err = net.Dial("tcp", address)
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return conn, nil
+}
+
+func registerWithProxy(address string, idekey string) error {
+	conn, err := connectToProxy(address)
 	if err != nil {
 		return err
 	}
@@ -96,12 +123,16 @@ func registerWithProxy(address string, idekey string) error {
 	dbgp.SendCommand(command)
 
 	response, err := dbgp.ReadResponse()
+	if err != nil {
+		return fmt.Errorf("proxyinit failed: %s", err)
+	}
 
 	if showXML {
 		fmt.Fprintf(output, "%s\n", Faint(response))
 	}
 
 	formatted, _ := dbgp.FormatXML(response)
+
 	fmt.Fprintln(output, formatted)
 
 	if !formatted.IsSuccess() {
@@ -112,8 +143,7 @@ func registerWithProxy(address string, idekey string) error {
 }
 
 func unregisterWithProxy(address string, idekey string) error {
-	conn, err := net.Dial("tcp", address)
-
+	conn, err := connectToProxy(address)
 	if err != nil {
 		return err
 	}
@@ -125,6 +155,9 @@ func unregisterWithProxy(address string, idekey string) error {
 	dbgp.SendCommand(command)
 
 	response, err := dbgp.ReadResponse()
+	if err != nil {
+		return fmt.Errorf("proxystop failed: %s", err)
+	}
 
 	if showXML {
 		fmt.Fprintf(output, "%s\n", Faint(response))
@@ -147,6 +180,9 @@ var (
 	proxy      = "localhost:9001"
 	register   = ""
 	showXML    = false
+	ssl        = false
+	sslPort    = 9030
+	sslProxy   = "localhost:9031"
 	version    = false
 	unregister = ""
 	output     = ansicon.Convert(os.Stdout)

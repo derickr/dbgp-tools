@@ -13,6 +13,7 @@ func handleProxyFlags() {
 	getopt.FlagLong(&proxy, "proxy", 'y', "Register with a DBGp proxy", "host:port")
 	getopt.FlagLong(&register, "register", 'r', "Register client with DBGp proxy", "idekey")
 	getopt.FlagLong(&unregister, "unregister", 'u', "Unregister client with DBGp proxy", "idekey")
+	getopt.FlagLong(&ssl, "ssl", 's', "Enable SSL")
 }
 
 func handleProxyArguments() {

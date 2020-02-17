@@ -1,6 +1,7 @@
 package server
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net"
@@ -56,6 +57,46 @@ func (server *Server) Listen(handler Handler) {
 			continue
 		}
 		go server.handleConnection(conn, handler)
+	}
+
+	fmt.Printf("Shutdown %s server\n", server.serverType)
+}
+
+func (server *Server) ListenSSL(handler Handler) {
+	server.group.Add(1)
+	defer server.group.Done()
+
+	cert, err := tls.LoadX509KeyPair("certs/server.pem", "certs/server.key")
+	if err != nil {
+		fmt.Printf("server: loadkeys: %s", err)
+		panic(err)
+	}
+	config := tls.Config{Certificates: []tls.Certificate{cert}}
+
+	listener, err := net.ListenTCP("tcp", server.address)
+	if err != nil {
+		panic(err)
+	}
+
+	defer server.closeConnection(listener)
+
+	fmt.Printf("Started %s server on %s\n", server.serverType, server.address)
+
+	for {
+		if server.stop {
+			break
+		}
+
+		_ = listener.SetDeadline(time.Now().Add(time.Second * 2))
+		conn, err := listener.Accept()
+		if err != nil {
+			if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
+				continue
+			}
+			fmt.Print(err)
+			continue
+		}
+		go server.handleConnection(tls.Server(conn, &config), handler)
 	}
 
 	fmt.Printf("Shutdown %s server\n", server.serverType)

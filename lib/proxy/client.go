@@ -78,8 +78,7 @@ func (handler *ServerHandler) Handle(conn net.Conn) error {
 
 	response, err := reader.ReadResponse()
 	if err != nil {
-		fmt.Printf("Error reading command: %v\n", err)
-		return err
+		return fmt.Errorf("Error reading response: %v", err)
 	}
 
 	init, _ := reader.ParseInitXML(response)

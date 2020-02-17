@@ -20,8 +20,7 @@ func (handler *ClientHandler) Handle(conn net.Conn) error {
 
 	cmd, err := reader.ReadCommand()
 	if err != nil {
-		fmt.Printf("Error reading command: %v\n", err)
-		return err
+		return fmt.Errorf("Error reading command: %v", err)
 	}
 
 	xml, err := cmd.Handle()

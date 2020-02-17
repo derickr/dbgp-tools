@@ -143,16 +143,14 @@ func (dbgp *dbgpClient) ReadResponse() (string, error) {
 	_, err := dbgp.reader.ReadBytes('\000')
 
 	if err != nil {
-		fmt.Println("Error reading length:", err.Error())
-		return "", err
+		return "", fmt.Errorf("Error reading length: %s", err)
 	}
 
 	/* Read data */
 	data, err := dbgp.reader.ReadBytes('\000')
 
 	if err != nil {
-		fmt.Println("Error reading data:", err.Error())
-		return "", err
+		return "", fmt.Errorf("Error reading data: %s", err)
 	}
 
 	return string(data), nil
