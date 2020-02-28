@@ -102,6 +102,7 @@ type Response struct {
 	Success     int       `xml:"success,attr,omitempty"`
 	Supported   int       `xml:"supported,attr,omitempty"`
 	Feature     string    `xml:"feature,attr,omitempty"`
+	FeatureName string    `xml:"feature_name,attr,omitempty"`
 	Reason      string    `xml:"reason,attr,omitempty"`
 	Encoding    string    `xml:"encoding,attr,omitempty"`
 	Stack       []Stack   `xml:"stack,omitempty"`
@@ -126,9 +127,9 @@ func formatContext(tid string, context Context) string {
 
 func formatFeatureGet(response Response) string {
 	if response.Supported == 1 {
-		return fmt.Sprintf("%s | %s > %s\n", Black(response.TID), Bold(Green("supported")), Bold(Green(response.Value)))
+		return fmt.Sprintf("%s | %s: %s > %s\n", Black(response.TID), Bold(Yellow(response.FeatureName)), Bold(Green("supported")), Bold(Green(response.Value)))
 	} else {
-		return fmt.Sprintf("%s | %s\n", Black(response.TID), Bold(Red("not supported")))
+		return fmt.Sprintf("%s | %s: %s\n", Black(response.TID), Bold(Yellow(response.FeatureName)), Bold(Red("not supported")))
 	}
 }
 

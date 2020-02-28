@@ -73,6 +73,7 @@ func handleConnection(c net.Conn, rl *readline.Instance) {
 		}
 
 		if err != nil { // reading failed
+			fmt.Fprintf(output, "%s\n", BrightRed(err))
 			break
 		}
 
