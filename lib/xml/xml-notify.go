@@ -25,6 +25,10 @@ func (notify Notify) IsSuccess() bool {
 	return true
 }
 
+func (notify Notify) ExpectMoreResponses() bool {
+	return true
+}
+
 func (notify Notify) String() string {
 	output := fmt.Sprintf("%s\n", Bold(BrightYellow(notify.Name)))
 

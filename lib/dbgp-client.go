@@ -10,29 +10,64 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Response interface {
 	String() string
 	IsSuccess() bool
+	ExpectMoreResponses() bool
 }
 
 type dbgpClient struct {
+	connection      net.Conn
 	reader          *bufio.Reader
 	writer          io.Writer
 	counter         int
 	lastSourceBegin int
+	smartClient     bool
+	commandsToRun   []string
 }
 
-func NewDbgpClient(c net.Conn) *dbgpClient {
+func NewDbgpClient(c net.Conn, isSmart bool) *dbgpClient {
 	var tmp dbgpClient
 
+	tmp.connection = c
 	tmp.reader = bufio.NewReader(c)
 	tmp.writer = c
 	tmp.counter = 1
 	tmp.lastSourceBegin = 1
+	tmp.smartClient = isSmart
+
+	if isSmart {
+		tmp.commandsToRun = append(tmp.commandsToRun, "feature_get -n supports_async")
+	}
 
 	return &tmp
+}
+
+func (dbgp *dbgpClient) AddCommandToRun(command string) {
+	if !dbgp.smartClient {
+		return
+	}
+
+	dbgp.commandsToRun = append(dbgp.commandsToRun, command)
+}
+
+func (dbgp *dbgpClient) GetNextCommand() (string, bool) {
+	var item string
+
+	if len(dbgp.commandsToRun) > 0 {
+		item, dbgp.commandsToRun = dbgp.commandsToRun[0], dbgp.commandsToRun[1:]
+
+		return item, true
+	}
+
+	return "", false
+}
+
+func (dbgp *dbgpClient) HasCommandsToRun() bool {
+	return len(dbgp.commandsToRun) > 0
 }
 
 func (dbgp *dbgpClient) ParseInitXML(rawXmlData string) (dbgpXml.Init, error) {
@@ -138,22 +173,28 @@ func (dbgp *dbgpClient) parseStreamXML(rawXmlData string) (dbgpXml.Stream, error
 	return stream, nil
 }
 
-func (dbgp *dbgpClient) ReadResponse() (string, error) {
+func (dbgp *dbgpClient) ReadResponse() (string, error, bool) {
+	dbgp.connection.SetReadDeadline(time.Now().Add(1 * time.Second))
+
 	/* Read length */
 	_, err := dbgp.reader.ReadBytes('\000')
 
 	if err != nil {
-		return "", fmt.Errorf("Error reading length: %s", err)
+		if err, ok := err.(net.Error); ok && err.Timeout() {
+			return "", err, true
+		}
+
+		return "", fmt.Errorf("Error reading length: %s", err), false
 	}
 
 	/* Read data */
 	data, err := dbgp.reader.ReadBytes('\000')
 
 	if err != nil {
-		return "", fmt.Errorf("Error reading data: %s", err)
+		return "", fmt.Errorf("Error reading data: %s", err), false
 	}
 
-	return string(data), nil
+	return string(data), nil, false
 }
 
 func (dbgp *dbgpClient) injectIIfNeeded(parts []string) []string {
@@ -221,44 +262,44 @@ func (dbgp *dbgpClient) SendCommand(line string) error {
 	return nil
 }
 
-func (dbgp *dbgpClient) FormatXML(rawXmlData string) (Response, bool) {
+func (dbgp *dbgpClient) FormatXML(rawXmlData string) Response {
 	var response Response
 
 	response, err := dbgp.parseResponseXML(rawXmlData)
 
 	if err == nil {
-		return response, false
+		return response
 	}
 
 	response, err = dbgp.ParseInitXML(rawXmlData)
 
 	if err == nil {
-		return response, false
+		return response
 	}
 
 	response, err = dbgp.parseNotifyXML(rawXmlData)
 
 	if err == nil {
-		return response, true
+		return response
 	}
 
 	response, err = dbgp.parseStreamXML(rawXmlData)
 
 	if err == nil {
-		return response, true
+		return response
 	}
 
 	response, err = dbgp.parseProxyInitXML(rawXmlData)
 
 	if err == nil {
-		return response, false
+		return response
 	}
 
 	response, err = dbgp.parseProxyStopXML(rawXmlData)
 
 	if err == nil {
-		return response, false
+		return response
 	}
 
-	return nil, false
+	return nil
 }

@@ -69,6 +69,10 @@ func (init ProxyInit) IsSuccess() bool {
 	return !!(init.Success == 1)
 }
 
+func (init ProxyInit) ExpectMoreResponses() bool {
+	return false
+}
+
 func (init ProxyInit) String() string {
 	if init.Success == 0 {
 		return fmt.Sprintf("%s | %s: %s\n", Yellow(Bold("proxyinit")), Bold(Red("failure")), BrightRed(init.Error.Message))

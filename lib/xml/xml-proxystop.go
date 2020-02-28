@@ -51,6 +51,10 @@ func (stop ProxyStop) IsSuccess() bool {
 	return !!(stop.Success == 1)
 }
 
+func (init ProxyStop) ExpectMoreResponses() bool {
+	return false
+}
+
 func (stop ProxyStop) String() string {
 	if stop.Success == 0 {
 		return fmt.Sprintf("%s | %s: %s\n", Yellow(Bold("proxystop")), Bold(Red("failure")), BrightRed(stop.Error.Message))

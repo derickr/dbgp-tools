@@ -228,6 +228,13 @@ func (response Response) IsSuccess() bool {
 	return !!(response.Success == 1)
 }
 
+func (response Response) ExpectMoreResponses() bool {
+	if response.Command == "break" {
+		return true
+	}
+	return false
+}
+
 func (response Response) String() string {
 	output := fmt.Sprintf("%s | %s", Yellow(response.TID), Green(response.Command))
 

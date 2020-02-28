@@ -74,9 +74,9 @@ func (handler *ServerHandler) setupForwarder(conn net.Conn, initialPacket []byte
 }
 
 func (handler *ServerHandler) Handle(conn net.Conn) error {
-	reader := dbgp.NewDbgpClient(conn)
+	reader := dbgp.NewDbgpClient(conn, false)
 
-	response, err := reader.ReadResponse()
+	response, err, _ := reader.ReadResponse()
 	if err != nil {
 		return fmt.Errorf("Error reading response: %v", err)
 	}

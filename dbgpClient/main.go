@@ -10,6 +10,7 @@ import (
 	"github.com/pborman/getopt/v2"    // BSD-3
 	"net"
 	"os"
+	"os/signal"
 	"os/user"
 	"strconv"
 )
@@ -33,15 +34,44 @@ exist.
 `)
 }
 
+type CommandRunner interface {
+	AddCommandToRun(string)
+}
+
+func setupSignalHandler(dbgp CommandRunner) {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		for _ = range c {
+			dbgp.AddCommandToRun("break")
+		}
+	}()
+}
+
 func handleConnection(c net.Conn, rl *readline.Instance) {
 	var lastCommand string
 
-	reader := dbgp.NewDbgpClient(c)
+	reader := dbgp.NewDbgpClient(c, smartClient)
+
+	if smartClient {
+		setupSignalHandler(reader)
+	}
 
 	fmt.Fprintf(output, "Connect from %s\n", c.RemoteAddr().String())
 
 	for {
-		response, err := reader.ReadResponse()
+		var formattedResponse dbgp.Response
+
+		response, err, timedOut := reader.ReadResponse()
+
+		if timedOut {
+			if reader.HasCommandsToRun() {
+				err = nil // set err to nil, so it resets the timeout
+				goto ReadInput
+			}
+			continue
+		}
+
 		if err != nil { // reading failed
 			break
 		}
@@ -50,15 +80,20 @@ func handleConnection(c net.Conn, rl *readline.Instance) {
 			fmt.Fprintf(output, "%s\n", Faint(response))
 		}
 
-		formatted, moreResults := reader.FormatXML(response)
-		fmt.Fprintln(output, formatted)
+		formattedResponse = reader.FormatXML(response)
+		fmt.Fprintln(output, formattedResponse)
 
-		if moreResults {
+		if formattedResponse.ExpectMoreResponses() {
 			continue
 		}
 
 	ReadInput:
-		line, err := rl.Readline()
+		line, found := reader.GetNextCommand()
+
+		if !found { // if there was no command in the queue, read from the command line
+			line, err = rl.Readline()
+		}
+
 		if err != nil { // io.EOF
 			break
 		}
@@ -80,6 +115,7 @@ func handleConnection(c net.Conn, rl *readline.Instance) {
 		lastCommand = line
 	}
 	c.Close()
+	signal.Reset()
 	fmt.Fprintf(output, "Disconnect\n")
 }
 
@@ -116,13 +152,13 @@ func registerWithProxy(address string, idekey string) error {
 		return err
 	}
 
-	dbgp := dbgp.NewDbgpClient(conn)
+	dbgp := dbgp.NewDbgpClient(conn, false)
 
 	command := "proxyinit -m 1 -k " + idekey + " -p " + strconv.Itoa(port)
 
 	dbgp.SendCommand(command)
 
-	response, err := dbgp.ReadResponse()
+	response, err, _ := dbgp.ReadResponse()
 	if err != nil {
 		return fmt.Errorf("proxyinit failed: %s", err)
 	}
@@ -131,7 +167,7 @@ func registerWithProxy(address string, idekey string) error {
 		fmt.Fprintf(output, "%s\n", Faint(response))
 	}
 
-	formatted, _ := dbgp.FormatXML(response)
+	formatted := dbgp.FormatXML(response)
 
 	fmt.Fprintln(output, formatted)
 
@@ -148,13 +184,13 @@ func unregisterWithProxy(address string, idekey string) error {
 		return err
 	}
 
-	dbgp := dbgp.NewDbgpClient(conn)
+	dbgp := dbgp.NewDbgpClient(conn, false)
 
 	command := "proxystop -k " + idekey
 
 	dbgp.SendCommand(command)
 
-	response, err := dbgp.ReadResponse()
+	response, err, _ := dbgp.ReadResponse()
 	if err != nil {
 		return fmt.Errorf("proxystop failed: %s", err)
 	}
@@ -163,7 +199,7 @@ func unregisterWithProxy(address string, idekey string) error {
 		fmt.Fprintf(output, "%s\n", Faint(response))
 	}
 
-	formatted, _ := dbgp.FormatXML(response)
+	formatted := dbgp.FormatXML(response)
 	fmt.Fprintln(output, formatted)
 
 	if !formatted.IsSuccess() {
@@ -174,29 +210,37 @@ func unregisterWithProxy(address string, idekey string) error {
 }
 
 var (
-	help       = false
-	once       = false
-	port       = 9000
-	proxy      = "localhost:9001"
-	register   = ""
-	showXML    = false
-	ssl        = false
-	sslPort    = 9030
-	sslProxy   = "localhost:9031"
-	version    = false
-	unregister = ""
-	output     = ansicon.Convert(os.Stdout)
+	help        = false
+	once        = false
+	port        = 9000
+	proxy       = "localhost:9001"
+	register    = ""
+	showXML     = false
+	smartClient = false
+	ssl         = false
+	sslPort     = 9030
+	sslProxy    = "localhost:9031"
+	version     = false
+	unregister  = ""
+	output      = ansicon.Convert(os.Stdout)
 )
 
 func printStartUp() {
 	fmt.Fprintf(output, "Xdebug Simple DBGp client (%s)\n", Bold(clientVersion))
-	fmt.Fprintf(output, "Copyright 2019-2020 by Derick Rethans\n\n")
+	fmt.Fprintf(output, "Copyright 2019-2020 by Derick Rethans\n")
+
+	if !smartClient {
+		fmt.Fprintf(output, "In dumb client mode\n")
+	}
+
+	fmt.Fprintf(output, "\n")
 }
 
 func handleArguments() {
 	getopt.Flag(&help, 'h', "Show this help")
 	getopt.Flag(&port, 'p', "Specify the port to listen on")
 	handleProxyFlags()
+	getopt.Flag(&smartClient, 'f', "Whether act as fully featured DBGp client")
 	getopt.Flag(&version, 'v', "Show version number and exit")
 	getopt.Flag(&showXML, 'x', "Show protocol XML")
 	getopt.Flag(&once, '1', "Debug once and then exit")
@@ -354,10 +398,11 @@ func initReadline() *readline.Instance {
 	dir := usr.HomeDir
 
 	rl, err := readline.NewEx(&readline.Config{
-		Prompt:       fmt.Sprintf("%s", Bold("(cmd) ")),
-		Stdout:       output,
-		HistoryFile:  dir + "/.xdebug-debugclient.hist",
-		AutoComplete: completer,
+		Prompt:          fmt.Sprintf("%s", Bold("(cmd) ")),
+		Stdout:          output,
+		HistoryFile:     dir + "/.xdebug-debugclient.hist",
+		AutoComplete:    completer,
+		InterruptPrompt: "^C",
 	})
 	if err != nil {
 		panic(err)
@@ -367,8 +412,8 @@ func initReadline() *readline.Instance {
 }
 
 func main() {
-	printStartUp()
 	handleArguments()
+	printStartUp()
 
 	portString := fmt.Sprintf(":%v", port)
 	l, err := net.Listen("tcp", portString)
