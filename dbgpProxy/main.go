@@ -12,6 +12,8 @@ import (
 	"sync"
 )
 
+var clientVersion = "0.2"
+
 var (
 	help             = false
 	clientAddress    = "localhost:9001"
@@ -22,7 +24,7 @@ var (
 )
 
 func printStartUp() {
-	fmt.Println("Xdebug DBGp proxy (Go 0.1)")
+	fmt.Println("Xdebug DBGp proxy (%s)", clientVersion)
 	fmt.Println("Copyright 2020 by Derick Rethans")
 }
 

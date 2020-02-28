@@ -15,7 +15,7 @@ import (
 	"strconv"
 )
 
-var clientVersion = "0.1"
+var clientVersion = "0.2"
 
 func displayHelp() {
 	fmt.Fprintf(output, `
