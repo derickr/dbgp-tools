@@ -49,13 +49,26 @@ func (handler *ServerHandler) setupForwarder(conn net.Conn, initialPacket []byte
 	fmt.Println("    - Init forwarded, start pipe")
 	clientChan := make(chan error)
 	serverChan := make(chan error)
+
+	conn.SetDeadline(time.Now().Add(time.Second * 2))
+
 	go func() {
+	restartCopy:
 		_, err = io.Copy(client, conn)
+		if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
+			conn.SetDeadline(time.Now().Add(time.Second * 2))
+			goto restartCopy
+		}
 		clientChan <- err
 	}()
 
 	go func() {
+	restartCopy:
 		_, err = io.Copy(conn, client)
+		if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
+			conn.SetDeadline(time.Now().Add(time.Second * 2))
+			goto restartCopy
+		}
 		serverChan <- err
 	}()
 
