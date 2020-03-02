@@ -24,7 +24,7 @@ var (
 )
 
 func printStartUp() {
-	fmt.Println("Xdebug DBGp proxy (%s)", clientVersion)
+	fmt.Printf("Xdebug DBGp proxy (%s)\n", clientVersion)
 	fmt.Println("Copyright 2020 by Derick Rethans")
 }
 
