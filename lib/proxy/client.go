@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"crypto/tls"
 	"fmt"
 	"github.com/derickr/dbgp-tools/lib"
 	"github.com/derickr/dbgp-tools/lib/connections"
@@ -19,9 +20,22 @@ func NewServerHandler(connectionList *connections.ConnectionList) *ServerHandler
 	return &ServerHandler{connectionList: connectionList}
 }
 
+func connectToIDE(clientConnection *connections.Connection) (net.Conn, error) {
+	if clientConnection.IsSSL() {
+		cert, err := tls.LoadX509KeyPair("client-certs/client.pem", "client-certs/client.key")
+		if err != nil {
+			return nil, err
+		}
+		config := tls.Config{Certificates: []tls.Certificate{cert}, InsecureSkipVerify: true}
+		return tls.Dial("tcp", clientConnection.FullAddress(), &config)
+	} else {
+		return net.Dial("tcp", clientConnection.FullAddress())
+	}
+}
+
 func (handler *ServerHandler) setupForwarder(conn net.Conn, initialPacket []byte, clientConnection *connections.Connection) error {
 	fmt.Printf("  - Connecting to %s\n", clientConnection.FullAddress())
-	client, err := net.Dial("tcp", clientConnection.FullAddress())
+	client, err := connectToIDE(clientConnection)
 
 	if err != nil {
 		fmt.Printf("    - IDE not connected: %s\n", err)

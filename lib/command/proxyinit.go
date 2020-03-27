@@ -13,6 +13,7 @@ type ProxyInitCommand struct {
 	ipAddress         string
 	port              int
 	multipleSupported bool
+	ssl               bool
 }
 
 func NewProxyInitCommand(ipAddress string, connectionList *connections.ConnectionList) *ProxyInitCommand {
@@ -22,21 +23,25 @@ func NewProxyInitCommand(ipAddress string, connectionList *connections.Connectio
 func (piCommand *ProxyInitCommand) Handle() (string, error) {
 	var init *dbgpXml.ProxyInit
 
-	conn := connections.NewConnection(piCommand.ideKey, piCommand.ipAddress, strconv.Itoa(piCommand.port))
+	conn := connections.NewConnection(piCommand.ideKey, piCommand.ipAddress, strconv.Itoa(piCommand.port), piCommand.ssl)
 	err := piCommand.connectionList.Add(conn)
 
 	if err == nil {
-		fmt.Printf("  - Added connection for IDE Key '%s': %s:%d\n", piCommand.ideKey, piCommand.ipAddress, piCommand.port)
-		init = dbgpXml.NewProxyInit(true, piCommand.ideKey, piCommand.ipAddress, piCommand.port, nil)
+		if piCommand.ssl {
+			fmt.Printf("  - Added SSL connection for IDE Key '%s': %s:%d\n", piCommand.ideKey, piCommand.ipAddress, piCommand.port)
+		} else {
+			fmt.Printf("  - Added connection for IDE Key '%s': %s:%d\n", piCommand.ideKey, piCommand.ipAddress, piCommand.port)
+		}
+		init = dbgpXml.NewProxyInit(true, piCommand.ideKey, piCommand.ipAddress, piCommand.port, piCommand.ssl, nil)
 	} else {
 		fmt.Printf("  - Could not add connection: %s\n", err.Error())
-		init = dbgpXml.NewProxyInit(false, piCommand.ideKey, piCommand.ipAddress, piCommand.port, &dbgpXml.ProxyInitError{ID: "ERR-01", Message: err.Error()})
+		init = dbgpXml.NewProxyInit(false, piCommand.ideKey, piCommand.ipAddress, piCommand.port, piCommand.ssl, &dbgpXml.ProxyInitError{ID: "ERR-01", Message: err.Error()})
 	}
 
 	return init.AsXML()
 }
 
-/* proxyinit -p 9000 -k PHPSTORM -m 1 */
+/* proxyinit -p 9000 -k PHPSTORM -m 1 -s ? */
 func CreateProxyInit(ipAddress string, connectionList *connections.ConnectionList, arguments []string) (DbgpCommand, error) {
 	piCommand := NewProxyInitCommand(ipAddress, connectionList)
 
@@ -61,6 +66,12 @@ func CreateProxyInit(ipAddress string, connectionList *connections.ConnectionLis
 				if value == "1" {
 					piCommand.multipleSupported = true
 				}
+			case "-s":
+				ssl, err := strconv.Atoi(value)
+				if err != nil {
+					return nil, fmt.Errorf("SSL value (%s) given for '-s' is not a valid value: %s", value, err.Error())
+				}
+				piCommand.ssl = ssl == 1
 			default:
 				return nil, fmt.Errorf("Unknown argument '%s' (with value '%s')", expectValueFor, value)
 			}

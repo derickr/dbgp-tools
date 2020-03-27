@@ -142,7 +142,7 @@ func connectToProxy(address string) (net.Conn, error) {
 	var cert tls.Certificate
 
 	if ssl {
-		cert, err = tls.LoadX509KeyPair("certs/client.pem", "certs/client.key")
+		cert, err = tls.LoadX509KeyPair("client-certs/client.pem", "client-certs/client.key")
 		if err != nil {
 			return nil, err
 		}
@@ -172,6 +172,9 @@ func registerWithProxy(address string, idekey string) error {
 	dbgp := dbgp.NewDbgpClient(conn, false)
 
 	command := "proxyinit -m 1 -k " + idekey + " -p " + strconv.Itoa(port)
+	if ssl {
+		command = command + " -s 1"
+	}
 
 	dbgp.SendCommand(command)
 
@@ -428,6 +431,27 @@ func initReadline() *readline.Instance {
 	return rl
 }
 
+func accept(l net.Listener) (net.Conn, error) {
+	c, err := l.Accept()
+
+	if err != nil {
+		return nil, err
+	}
+
+	if ssl {
+		cert, err := tls.LoadX509KeyPair("certs/fullchain.pem", "certs/privkey.pem")
+		if err != nil {
+			fmt.Printf("server: loadkeys: %s", err)
+			panic(err)
+		}
+		config := tls.Config{Certificates: []tls.Certificate{cert}}
+
+		return tls.Server(c, &config), nil
+	} else {
+		return c, nil
+	}
+}
+
 func main() {
 	handleArguments()
 	printStartUp()
@@ -446,7 +470,7 @@ func main() {
 	defer rl.Close()
 
 	for {
-		c, err := l.Accept()
+		c, err := accept(l)
 		if err != nil {
 			fmt.Fprintln(output, err)
 			return

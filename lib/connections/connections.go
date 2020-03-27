@@ -10,10 +10,15 @@ type Connection struct {
 	ideKey    string
 	ipAddress string
 	port      string
+	ssl       bool
 }
 
-func NewConnection(ideKey string, ipAddress string, port string) *Connection {
-	return &Connection{ideKey: ideKey, ipAddress: ipAddress, port: port}
+func NewConnection(ideKey string, ipAddress string, port string, ssl bool) *Connection {
+	return &Connection{ideKey: ideKey, ipAddress: ipAddress, port: port, ssl: ssl}
+}
+
+func (connection *Connection) IsSSL() bool {
+	return connection.ssl == true
 }
 
 func (connection *Connection) FullAddress() string {

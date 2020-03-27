@@ -31,10 +31,11 @@ type ProxyInit struct {
 	IDEKey      string          `xml:"idekey,attr"`
 	Address     string          `xml:"address,attr"`
 	Port        string          `xml:"port,attr"`
+	SSL         bool            `xml:"ssl,attr"`
 	Error       *ProxyInitError `xml:"error,omitempty"`
 }
 
-func NewProxyInit(success bool, ideKey string, address string, port int, initError *ProxyInitError) *ProxyInit {
+func NewProxyInit(success bool, ideKey string, address string, port int, ssl bool, initError *ProxyInitError) *ProxyInit {
 	successStr := 1
 	if !success {
 		successStr = 0
@@ -47,6 +48,7 @@ func NewProxyInit(success bool, ideKey string, address string, port int, initErr
 		IDEKey:      ideKey,
 		Address:     address,
 		Port:        strconv.Itoa(port),
+		SSL:         ssl,
 		Error:       initError,
 	}
 }

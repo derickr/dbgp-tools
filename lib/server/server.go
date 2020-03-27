@@ -66,7 +66,7 @@ func (server *Server) ListenSSL(handler Handler) {
 	server.group.Add(1)
 	defer server.group.Done()
 
-	cert, err := tls.LoadX509KeyPair("certs/server.pem", "certs/server.key")
+	cert, err := tls.LoadX509KeyPair("certs/fullchain.pem", "certs/privkey.pem")
 	if err != nil {
 		fmt.Printf("server: loadkeys: %s", err)
 		panic(err)
