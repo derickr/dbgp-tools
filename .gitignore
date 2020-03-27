@@ -1,7 +1,13 @@
-dbgpClient/dbgpClient
-dbgpClient/dbgpClient.exe
 *.sw?
 */*.sw?
 */*/*.sw?
+dbgpClient/dbgpClient
+dbgpClient/dbgpClient.exe
+dbgpClient/dbgpClient-macos
+dbgpClient/certs
+dbgpClient/client-certs
 dbgpProxy/dbgpProxy
-dbgpProxy/pdbgpProxy.exe
+dbgpProxy/dbgpProxy.exe
+dbgpProxy/dbgpProxy-macos
+dbgpProxy/certs
+dbgpProxy/client-certs
