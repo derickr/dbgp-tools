@@ -258,7 +258,7 @@ func (response Response) String() string {
 	case "breakpoint_set":
 		output += formatBreakpointSet(response)
 
-	case "context_get", "property_get":
+	case "context_get", "eval", "property_get":
 		for _, prop := range response.Property {
 			output += formatProperty(response.TID, "", prop)
 		}
