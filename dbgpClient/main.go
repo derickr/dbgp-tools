@@ -13,6 +13,7 @@ import (
 	"os/signal"
 	"os/user"
 	"strconv"
+	"strings"
 )
 
 var clientVersion = "0.2"
@@ -48,6 +49,10 @@ func setupSignalHandler(dbgp CommandRunner) {
 	}()
 }
 
+func isValidXml(xml string) bool {
+	return strings.HasPrefix(xml, "<?xml")
+}
+
 func handleConnection(c net.Conn, rl *readline.Instance) {
 	var lastCommand string
 
@@ -77,11 +82,22 @@ func handleConnection(c net.Conn, rl *readline.Instance) {
 			break
 		}
 
+		if !isValidXml(response) {
+			fmt.Fprintf(output, "%s\n", BrightRed("The received XML is not valid, closing connection."))
+			break
+		}
+
 		if showXML {
 			fmt.Fprintf(output, "%s\n", Faint(response))
 		}
 
 		formattedResponse = reader.FormatXML(response)
+
+		if formattedResponse == nil {
+			fmt.Fprintf(output, "%s\n", BrightRed("Could not interpret XML, closing connection."))
+			break
+		}
+
 		fmt.Fprintln(output, formattedResponse)
 
 		if formattedResponse.ExpectMoreResponses() {
