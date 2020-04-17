@@ -17,9 +17,9 @@ var clientVersion = "0.2"
 var (
 	help             = false
 	clientAddress    = "localhost:9001"
-	clientSSLAddress = "localhost:9031"
+	clientSSLAddress = "localhost:9011"
 	serverAddress    = "localhost:9000"
-	serverSSLAddress = "localhost:9030"
+	serverSSLAddress = "localhost:9010"
 	version          = false
 )
 
@@ -47,11 +47,15 @@ func handleArguments() {
 	}
 }
 
+func formatError(connection connections.Connection) error {
+	return fmt.Errorf("IDE Key '%s' is already registered for connection %s", connection.GetKey(), connection.FullAddress())
+}
+
 func main() {
 	printStartUp()
 	handleArguments()
 
-	ideConnectionList := connections.NewConnectionList()
+	ideConnectionList := connections.NewConnectionList(formatError)
 
 	syncGroup := &sync.WaitGroup{}
 	clientServer := server.NewServer("client", resolveTCP(clientAddress), syncGroup)

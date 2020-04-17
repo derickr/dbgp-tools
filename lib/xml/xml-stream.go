@@ -29,6 +29,10 @@ func (stream Stream) ExpectMoreResponses() bool {
 	return true
 }
 
+func (stream Stream) ShouldCloseConnection() bool {
+	return false
+}
+
 func (stream Stream) String() string {
 	output := fmt.Sprintf("%s\n", Bold(BrightYellow(stream.Type)))
 

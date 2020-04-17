@@ -18,6 +18,11 @@ func handleProxyFlags() {
 
 func handleProxyArguments() {
 	if register != "" {
+		if cloudUser != "" {
+			fmt.Fprintf(output, "%s\n", BrightRed(Bold("Refusing to register to proxy because we're connecting to Xdebug Cloud")))
+			os.Exit(2)
+		}
+
 		err := registerWithProxy(proxy, register)
 		if err != nil {
 			fmt.Fprintf(output, "%s: %s\n", BrightRed(Bold("Error registering with proxy")), BrightRed(err.Error()))
@@ -26,6 +31,10 @@ func handleProxyArguments() {
 	}
 
 	if unregister != "" {
+		if cloudUser != "" {
+			fmt.Fprintf(output, "%s\n", BrightRed(Bold("Refusing to register to proxy because we're connecting to Xdebug Cloud")))
+			os.Exit(2)
+		}
 		err := unregisterWithProxy(proxy, unregister)
 		if err != nil {
 			fmt.Fprintf(output, "%s: %s\n", BrightRed(Bold("Error unregistering with proxy")), BrightRed(err.Error()))

@@ -43,6 +43,7 @@ type Init struct {
 	ProtocolVersion string    `xml:"protocol_version,attr"`
 	AppID           string    `xml:"appid,attr"`
 	IDEKey          string    `xml:"idekey,attr"`
+	CloudUserID     string    `xml:"userid,attr"`
 	Engine          Engine    `xml:"engine"`
 	Author          Author    `xml:"author"`
 	URL             URL       `xml:"url"`
@@ -54,6 +55,10 @@ func (init Init) IsSuccess() bool {
 }
 
 func (init Init) ExpectMoreResponses() bool {
+	return false
+}
+
+func (init Init) ShouldCloseConnection() bool {
 	return false
 }
 

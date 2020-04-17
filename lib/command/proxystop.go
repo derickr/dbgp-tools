@@ -15,6 +15,10 @@ func NewProxyStopCommand(connectionList *connections.ConnectionList) *ProxyStopC
 	return &ProxyStopCommand{connectionList: connectionList, ideKey: ""}
 }
 
+func (piCommand *ProxyStopCommand) GetName() string {
+	return "proxystop"
+}
+
 func (piCommand *ProxyStopCommand) Handle() (string, error) {
 	var stop *dbgpXml.ProxyStop
 

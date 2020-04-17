@@ -29,6 +29,10 @@ func (notify Notify) ExpectMoreResponses() bool {
 	return true
 }
 
+func (notify Notify) ShouldCloseConnection() bool {
+	return false
+}
+
 func (notify Notify) String() string {
 	output := fmt.Sprintf("%s\n", Bold(BrightYellow(notify.Name)))
 

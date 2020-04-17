@@ -51,7 +51,11 @@ func (stop ProxyStop) IsSuccess() bool {
 	return !!(stop.Success == 1)
 }
 
-func (init ProxyStop) ExpectMoreResponses() bool {
+func (stop ProxyStop) ExpectMoreResponses() bool {
+	return false
+}
+
+func (stop ProxyStop) ShouldCloseConnection() bool {
 	return false
 }
 

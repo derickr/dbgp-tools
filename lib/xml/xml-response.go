@@ -236,6 +236,13 @@ func (response Response) ExpectMoreResponses() bool {
 	return false
 }
 
+func (response Response) ShouldCloseConnection() bool {
+	if response.Command == "detach" || response.Command == "stop" {
+		return true
+	}
+	return false
+}
+
 func (response Response) String() string {
 	output := fmt.Sprintf("%s | %s", Yellow(response.TID), Green(response.Command))
 

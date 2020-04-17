@@ -20,10 +20,14 @@ func NewProxyInitCommand(ipAddress string, connectionList *connections.Connectio
 	return &ProxyInitCommand{connectionList: connectionList, ideKey: "", ipAddress: ipAddress, port: 9000, multipleSupported: false}
 }
 
+func (piCommand *ProxyInitCommand) GetName() string {
+	return "proxyinit"
+}
+
 func (piCommand *ProxyInitCommand) Handle() (string, error) {
 	var init *dbgpXml.ProxyInit
 
-	conn := connections.NewConnection(piCommand.ideKey, piCommand.ipAddress, strconv.Itoa(piCommand.port), piCommand.ssl)
+	conn := connections.NewConnection(piCommand.ideKey, piCommand.ipAddress, strconv.Itoa(piCommand.port), piCommand.ssl, nil)
 	err := piCommand.connectionList.Add(conn)
 
 	if err == nil {

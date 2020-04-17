@@ -119,7 +119,7 @@ func (server *Server) handleConnection(conn net.Conn, handler Handler) {
 func (server *Server) closeConnection(closer io.Closer) {
 	err := closer.Close()
 	if err != nil {
-		panic(err)
+		fmt.Printf("  - Couldn't close connection: %v", err)
 	}
 }
 

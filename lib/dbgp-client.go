@@ -17,16 +17,20 @@ type Response interface {
 	String() string
 	IsSuccess() bool
 	ExpectMoreResponses() bool
+	ShouldCloseConnection() bool
 }
 
 type dbgpClient struct {
-	connection      net.Conn
-	reader          *bufio.Reader
-	writer          io.Writer
-	counter         int
-	lastSourceBegin int
-	smartClient     bool
-	commandsToRun   []string
+	connection  net.Conn
+	reader      *bufio.Reader
+	writer      io.Writer
+	counter     int
+	smartClient bool
+
+	lastSourceBegin  int
+	isInConversation bool
+	abortRequested   bool
+	commandsToRun    []string
 }
 
 func NewDbgpClient(c net.Conn, isSmart bool) *dbgpClient {
@@ -38,6 +42,8 @@ func NewDbgpClient(c net.Conn, isSmart bool) *dbgpClient {
 	tmp.counter = 1
 	tmp.lastSourceBegin = 1
 	tmp.smartClient = isSmart
+	tmp.isInConversation = false
+	tmp.abortRequested = false
 
 	if isSmart {
 		tmp.commandsToRun = append(tmp.commandsToRun, "feature_get -n supports_async")
@@ -84,6 +90,8 @@ func (dbgp *dbgpClient) ParseInitXML(rawXmlData string) (dbgpXml.Init, error) {
 		return init, err
 	}
 
+	dbgp.TheConversationIsOn()
+
 	return init, nil
 }
 
@@ -121,6 +129,23 @@ func (dbgp *dbgpClient) parseProxyStopXML(rawXmlData string) (dbgpXml.ProxyStop,
 	return init, nil
 }
 
+func (dbgp *dbgpClient) parseCloudInitXML(rawXmlData string) (dbgpXml.CloudInit, error) {
+	init := dbgpXml.CloudInit{}
+
+	reader := strings.NewReader(rawXmlData)
+
+	decoder := xml.NewDecoder(reader)
+	decoder.CharsetReader = charset.NewReaderLabel
+
+	err := decoder.Decode(&init)
+
+	if err != nil {
+		return init, err
+	}
+
+	return init, nil
+}
+
 func (dbgp *dbgpClient) parseNotifyXML(rawXmlData string) (dbgpXml.Notify, error) {
 	notify := dbgpXml.Notify{}
 
@@ -136,6 +161,21 @@ func (dbgp *dbgpClient) parseNotifyXML(rawXmlData string) (dbgpXml.Notify, error
 	}
 
 	return notify, nil
+}
+
+func (dbgp *dbgpClient) TheConversationIsOn() {
+	dbgp.isInConversation = true
+}
+func (dbgp *dbgpClient) IsInConversation() bool {
+	return dbgp.isInConversation
+}
+
+func (dbgp *dbgpClient) SignalAbort() {
+	dbgp.abortRequested = true
+}
+
+func (dbgp *dbgpClient) HasAbortBeenSignalled() bool {
+	return dbgp.abortRequested
 }
 
 func (dbgp *dbgpClient) parseResponseXML(rawXmlData string) (dbgpXml.Response, error) {
@@ -296,6 +336,12 @@ func (dbgp *dbgpClient) FormatXML(rawXmlData string) Response {
 	}
 
 	response, err = dbgp.parseProxyStopXML(rawXmlData)
+
+	if err == nil {
+		return response
+	}
+
+	response, err = dbgp.parseCloudInitXML(rawXmlData)
 
 	if err == nil {
 		return response

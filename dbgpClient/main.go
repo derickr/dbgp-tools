@@ -37,6 +37,8 @@ exist.
 
 type CommandRunner interface {
 	AddCommandToRun(string)
+	IsInConversation() bool
+	SignalAbort()
 }
 
 func setupSignalHandler(dbgp CommandRunner) {
@@ -44,7 +46,11 @@ func setupSignalHandler(dbgp CommandRunner) {
 	signal.Notify(c, os.Interrupt)
 	go func() {
 		for _ = range c {
-			dbgp.AddCommandToRun("break")
+			if dbgp.IsInConversation() {
+				dbgp.AddCommandToRun("break")
+			} else {
+				dbgp.SignalAbort()
+			}
 		}
 	}()
 }
@@ -53,16 +59,15 @@ func isValidXml(xml string) bool {
 	return strings.HasPrefix(xml, "<?xml")
 }
 
-func handleConnection(c net.Conn, rl *readline.Instance) {
+func handleConnection(c net.Conn, rl *readline.Instance) error {
 	var lastCommand string
 
 	reader := dbgp.NewDbgpClient(c, smartClient)
 
 	if smartClient {
 		setupSignalHandler(reader)
+		defer signal.Reset()
 	}
-
-	fmt.Fprintf(output, "Connect from %s\n", c.RemoteAddr().String())
 
 	for {
 		var formattedResponse dbgp.Response
@@ -70,6 +75,9 @@ func handleConnection(c net.Conn, rl *readline.Instance) {
 		response, err, timedOut := reader.ReadResponse()
 
 		if timedOut {
+			if reader.HasAbortBeenSignalled() {
+				return nil
+			}
 			if reader.HasCommandsToRun() {
 				err = nil // set err to nil, so it resets the timeout
 				goto ReadInput
@@ -78,13 +86,11 @@ func handleConnection(c net.Conn, rl *readline.Instance) {
 		}
 
 		if err != nil { // reading failed
-			fmt.Fprintf(output, "%s\n", BrightRed(err))
-			break
+			return err
 		}
 
 		if !isValidXml(response) {
-			fmt.Fprintf(output, "%s\n", BrightRed("The received XML is not valid, closing connection."))
-			break
+			return fmt.Errorf("The received XML is not valid, closing connection: %s", response)
 		}
 
 		if showXML {
@@ -94,14 +100,20 @@ func handleConnection(c net.Conn, rl *readline.Instance) {
 		formattedResponse = reader.FormatXML(response)
 
 		if formattedResponse == nil {
-			fmt.Fprintf(output, "%s\n", BrightRed("Could not interpret XML, closing connection."))
-			break
+			return fmt.Errorf("Could not interpret XML, closing connection.")
 		}
-
 		fmt.Fprintln(output, formattedResponse)
 
 		if formattedResponse.ExpectMoreResponses() {
+			if !formattedResponse.IsSuccess() {
+				return fmt.Errorf("Another response expected, but it wasn't a successful response")
+			}
 			continue
+		}
+
+		if formattedResponse.ShouldCloseConnection() {
+			fmt.Fprintf(output, "%s\n", BrightRed("The connection should be closed."))
+			return nil
 		}
 
 	ReadInput:
@@ -112,7 +124,7 @@ func handleConnection(c net.Conn, rl *readline.Instance) {
 		}
 
 		if err != nil { // io.EOF
-			break
+			return err
 		}
 
 		if line == "help" {
@@ -126,17 +138,16 @@ func handleConnection(c net.Conn, rl *readline.Instance) {
 
 		err = reader.SendCommand(line)
 		if err != nil {
-			break
+			return err
 		}
 
 		lastCommand = line
 	}
-	c.Close()
-	signal.Reset()
-	fmt.Fprintf(output, "Disconnect\n")
+
+	return nil
 }
 
-func connectToProxy(address string) (net.Conn, error) {
+func connectTo(address string) (net.Conn, error) {
 	var conn net.Conn
 	var err error
 	var cert tls.Certificate
@@ -164,7 +175,7 @@ func connectToProxy(address string) (net.Conn, error) {
 }
 
 func registerWithProxy(address string, idekey string) error {
-	conn, err := connectToProxy(address)
+	conn, err := connectTo(address)
 	if err != nil {
 		return err
 	}
@@ -199,7 +210,7 @@ func registerWithProxy(address string, idekey string) error {
 }
 
 func unregisterWithProxy(address string, idekey string) error {
-	conn, err := connectToProxy(address)
+	conn, err := connectTo(address)
 	if err != nil {
 		return err
 	}
@@ -230,6 +241,8 @@ func unregisterWithProxy(address string, idekey string) error {
 }
 
 var (
+	cloudUser   = ""
+	cloudDomain = "a.cloud.xdebug.com:9021"
 	help        = false
 	once        = false
 	port        = 9000
@@ -238,8 +251,8 @@ var (
 	showXML     = false
 	smartClient = false
 	ssl         = false
-	sslPort     = 9030
-	sslProxy    = "localhost:9031"
+	sslPort     = 9010
+	sslProxy    = "localhost:9011"
 	version     = false
 	unregister  = ""
 	output      = ansicon.Convert(os.Stdout)
@@ -259,11 +272,13 @@ func printStartUp() {
 func handleArguments() {
 	getopt.Flag(&help, 'h', "Show this help")
 	getopt.Flag(&port, 'p', "Specify the port to listen on")
-	handleProxyFlags()
 	getopt.Flag(&smartClient, 'f', "Whether act as fully featured DBGp client")
 	getopt.Flag(&version, 'v', "Show version number and exit")
 	getopt.Flag(&showXML, 'x', "Show protocol XML")
 	getopt.Flag(&once, '1', "Debug once and then exit")
+
+	handleProxyFlags()
+	handleCloudFlags()
 
 	getopt.Parse()
 
@@ -275,7 +290,10 @@ func handleArguments() {
 		os.Exit(0)
 	}
 
-	handleProxyArguments()
+	if cloudUser == "" {
+		handleProxyArguments()
+	}
+	handleCloudArguments()
 }
 
 var completer = readline.NewPrefixCompleter(
@@ -452,10 +470,25 @@ func accept(l net.Listener) (net.Conn, error) {
 	}
 }
 
-func main() {
-	handleArguments()
-	printStartUp()
+func doNormalConnectionLoop(l net.Listener, rl *readline.Instance) {
+	c, err := accept(l)
+	if err != nil {
+		fmt.Fprintln(output, err)
+		return
+	}
 
+	defer c.Close()
+	defer fmt.Fprintf(output, "Disconnect\n")
+
+	fmt.Fprintf(output, "Connect from %s\n", c.RemoteAddr().String())
+
+	err = handleConnection(c, rl)
+	if err != nil {
+		fmt.Fprintf(output, "%s: %s\n", BrightRed("Error while handling connection"), BrightRed(err.Error()))
+	}
+}
+
+func runAsNormalClient() {
 	portString := fmt.Sprintf(":%v", port)
 	l, err := net.Listen("tcp", portString)
 	if err != nil {
@@ -470,16 +503,50 @@ func main() {
 	defer rl.Close()
 
 	for {
-		c, err := accept(l)
-		if err != nil {
-			fmt.Fprintln(output, err)
-			return
-		}
-
-		handleConnection(c, rl)
+		doNormalConnectionLoop(l, rl)
 
 		if once {
 			break
 		}
+	}
+}
+
+func runAsCloudClient() {
+	conn, err := connectTo(cloudDomain)
+
+	if err != nil {
+		fmt.Fprintf(output, "%s '%s': %s\n", BrightRed("Can not connect to Xdebug cloud at"), BrightYellow(cloudDomain), BrightRed(err))
+		return
+	}
+	defer conn.Close()
+	defer fmt.Fprintf(output, "Disconnect\n")
+
+	dbgp := dbgp.NewDbgpClient(conn, false)
+
+	rl := initReadline()
+	defer rl.Close()
+
+	command := "cloudinit -u " + cloudUser
+	dbgp.SendCommand(command)
+
+	for {
+		err = handleConnection(conn, rl)
+		if err != nil {
+			fmt.Fprintf(output, "%s: %s\n", BrightRed("Error while handling connection"), BrightRed(err.Error()))
+			break
+		}
+
+		fmt.Fprintf(output, "\n%s\n", BrightGreen(Bold("Waiting for incoming connection...")))
+	}
+}
+
+func main() {
+	handleArguments()
+	printStartUp()
+
+	if cloudUser != "" {
+		runAsCloudClient()
+	} else {
+		runAsNormalClient()
 	}
 }
