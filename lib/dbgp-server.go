@@ -11,15 +11,15 @@ import (
 	"strings"
 )
 
-type dbgpServer struct {
+type DbgpServer struct {
 	connection     net.Conn
 	connectionList *connections.ConnectionList
 	reader         *bufio.Reader
 	writer         io.Writer
 }
 
-func NewDbgpServer(c net.Conn, connectionList *connections.ConnectionList) *dbgpServer {
-	var tmp dbgpServer
+func NewDbgpServer(c net.Conn, connectionList *connections.ConnectionList) *DbgpServer {
+	var tmp DbgpServer
 
 	tmp.connection = c
 	tmp.connectionList = connectionList
@@ -29,7 +29,7 @@ func NewDbgpServer(c net.Conn, connectionList *connections.ConnectionList) *dbgp
 	return &tmp
 }
 
-func (dbgp *dbgpServer) parseLine(data string) (command.DbgpCommand, error) {
+func (dbgp *DbgpServer) parseLine(data string) (command.DbgpCommand, error) {
 	parts := strings.Split(data, " ")
 
 	switch parts[0] {
@@ -44,7 +44,7 @@ func (dbgp *dbgpServer) parseLine(data string) (command.DbgpCommand, error) {
 	return nil, fmt.Errorf("Don't understand command '%s'", parts)
 }
 
-func (dbgp *dbgpServer) parseInitLine(data string) (command.DbgpInitCommand, error) {
+func (dbgp *DbgpServer) parseInitLine(data string) (command.DbgpInitCommand, error) {
 	parts := strings.Split(data, " ")
 
 	switch parts[0] {
@@ -55,7 +55,7 @@ func (dbgp *dbgpServer) parseInitLine(data string) (command.DbgpInitCommand, err
 	return nil, fmt.Errorf("Don't understand command '%s'", parts)
 }
 
-func (dbgp *dbgpServer) ReadCommand() (command.DbgpCommand, error) {
+func (dbgp *DbgpServer) ReadCommand() (command.DbgpCommand, error) {
 	/* Read data */
 	data, err := dbgp.reader.ReadBytes('\000')
 
@@ -67,7 +67,7 @@ func (dbgp *dbgpServer) ReadCommand() (command.DbgpCommand, error) {
 	return dbgp.parseLine(strings.TrimRight(string(data), "\000"))
 }
 
-func (dbgp *dbgpServer) ReadInitCommand() (command.DbgpInitCommand, error) {
+func (dbgp *DbgpServer) ReadInitCommand() (command.DbgpInitCommand, error) {
 	/* Read data */
 	data, err := dbgp.reader.ReadBytes('\000')
 
@@ -79,7 +79,7 @@ func (dbgp *dbgpServer) ReadInitCommand() (command.DbgpInitCommand, error) {
 	return dbgp.parseInitLine(strings.TrimRight(string(data), "\000"))
 }
 
-func (dbgp *dbgpServer) SendResponse(xml string) error {
+func (dbgp *DbgpServer) SendResponse(xml string) error {
 	_, err := dbgp.writer.Write([]byte(strconv.Itoa(len(xml)) + "\000" + xml + "\000"))
 
 	return err
