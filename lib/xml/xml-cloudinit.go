@@ -13,13 +13,12 @@ type CloudInitError struct {
 	Message string   `xml:"message"`
 }
 type CloudInit struct {
-	XMLName         xml.Name        `xml:"cloudinit"`
-	XmlNS           string          `xml:"xmlns,attr"`
-	XmlNSXdebug     string          `xml:"xmlns:xdebug,attr"`
-	Success         int             `xml:"success,attr"`
-	UserID          string          `xml:"userid,attr"`
-	ConnectionsLeft int             `xml:"remaining,attr"`
-	Error           *CloudInitError `xml:"error,omitempty"`
+	XMLName     xml.Name        `xml:"cloudinit"`
+	XmlNS       string          `xml:"xmlns,attr"`
+	XmlNSXdebug string          `xml:"xmlns:xdebug,attr"`
+	Success     int             `xml:"success,attr"`
+	UserID      string          `xml:"userid,attr"`
+	Error       *CloudInitError `xml:"error,omitempty"`
 }
 
 func NewCloudInit(success bool, userID string, initError *CloudInitError) *CloudInit {
@@ -29,12 +28,11 @@ func NewCloudInit(success bool, userID string, initError *CloudInitError) *Cloud
 	}
 
 	return &CloudInit{
-		XmlNS:           "urn:debugger_protocol_v1",
-		XmlNSXdebug:     "https://xdebug.org/dbgp/xdebug",
-		Success:         successStr,
-		UserID:          userID,
-		ConnectionsLeft: 0,
-		Error:           initError,
+		XmlNS:       "urn:debugger_protocol_v1",
+		XmlNSXdebug: "https://xdebug.org/dbgp/xdebug",
+		Success:     successStr,
+		UserID:      userID,
+		Error:       initError,
 	}
 }
 
@@ -66,8 +64,13 @@ func (int CloudInit) ShouldCloseConnection() bool {
 
 func (init CloudInit) String() string {
 	if init.Success == 0 {
-		return fmt.Sprintf("%s | %s: %s\n", Yellow(Bold("cloudinit")), Bold(Red("failure")), BrightRed(init.Error.Message))
+		return fmt.Sprintf("%s | %s: %s\n",
+			Yellow(Bold("cloudinit")), Bold(Red("failure")), BrightRed(init.Error.Message))
 	} else {
-		return fmt.Sprintf("%s | Connected as %s | %d connections remaining\n\n%s\n", Yellow(Bold("cloudinit")), Bold(Yellow(init.UserID)), BrightGreen(init.ConnectionsLeft), BrightGreen(Bold("Waiting for incoming connection...")))
+		return fmt.Sprintf("%s | Connected as %s | XX connections remaining\n\n%s\n",
+			Yellow(Bold("cloudinit")),
+			Bold(Yellow(init.UserID)),
+			/*BrightGreen(init.ConnectionsLeft),*/
+			BrightGreen(Bold("Waiting for incoming connection...")))
 	}
 }

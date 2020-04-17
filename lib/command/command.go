@@ -7,6 +7,7 @@ type DbgpCommand interface {
 
 type DbgpCloudInitCommand interface {
 	Handle() (string, error)
+	GetKey() string
 	GetName() string
 	AddConnection() error
 	Close()
