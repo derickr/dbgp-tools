@@ -26,6 +26,20 @@ func (ciCommand *CloudInitCommand) GetKey() string {
 	return ciCommand.userId
 }
 
+func (ciCommand *CloudInitCommand) AddConnection() error {
+	conn := connections.NewConnection(ciCommand.userId, "", "", true, ciCommand.connection)
+	err := ciCommand.connectionList.Add(conn)
+
+	if err == nil {
+		fmt.Printf("  - Added connection for Cloud User '%s' from %s\n", ciCommand.GetName(), (*ciCommand.connection).RemoteAddr())
+	} else {
+		ciCommand.needsRemoving = false
+		fmt.Printf("  - Could not add connection: %s\n", err.Error())
+	}
+
+	return err
+}
+
 func (ciCommand *CloudInitCommand) Close() {
 	if ciCommand.needsRemoving {
 		fmt.Printf("  - Removed connection for Cloud User '%s' from %s\n", ciCommand.userId, (*ciCommand.connection).RemoteAddr())
@@ -33,7 +47,7 @@ func (ciCommand *CloudInitCommand) Close() {
 	}
 }
 
-func (ciCommand *CloudInitCommand) Handle() DbgpInitResult {
+func (ciCommand *CloudInitCommand) Handle() (string, error) {
 	var init *dbgpXml.CloudInit
 
 	conn := connections.NewConnection(ciCommand.userId, "", "", true, ciCommand.connection)
@@ -48,11 +62,11 @@ func (ciCommand *CloudInitCommand) Handle() DbgpInitResult {
 		init = dbgpXml.NewCloudInit(false, ciCommand.userId, &dbgpXml.CloudInitError{ID: "ERR-01", Message: err.Error()})
 	}
 
-	return init
+	return init.AsXML()
 }
 
 /* cloudinit -u <userid> */
-func CreateCloudInit(connectionsList *connections.ConnectionList, connection *net.Conn, arguments []string) (DbgpInitCommand, error) {
+func CreateCloudInit(connectionsList *connections.ConnectionList, connection *net.Conn, arguments []string) (DbgpCloudInitCommand, error) {
 	ciCommand := NewCloudInitCommand(connectionsList, connection)
 
 	expectValue := false

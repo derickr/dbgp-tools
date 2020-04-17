@@ -44,7 +44,7 @@ func (dbgp *DbgpServer) parseLine(data string) (command.DbgpCommand, error) {
 	return nil, fmt.Errorf("Don't understand command '%s'", parts)
 }
 
-func (dbgp *DbgpServer) parseInitLine(data string) (command.DbgpInitCommand, error) {
+func (dbgp *DbgpServer) parseCloudInitLine(data string) (command.DbgpCloudInitCommand, error) {
 	parts := strings.Split(data, " ")
 
 	switch parts[0] {
@@ -67,7 +67,7 @@ func (dbgp *DbgpServer) ReadCommand() (command.DbgpCommand, error) {
 	return dbgp.parseLine(strings.TrimRight(string(data), "\000"))
 }
 
-func (dbgp *DbgpServer) ReadInitCommand() (command.DbgpInitCommand, error) {
+func (dbgp *DbgpServer) ReadCloudInitCommand() (command.DbgpCloudInitCommand, error) {
 	/* Read data */
 	data, err := dbgp.reader.ReadBytes('\000')
 
@@ -76,7 +76,7 @@ func (dbgp *DbgpServer) ReadInitCommand() (command.DbgpInitCommand, error) {
 		return nil, err
 	}
 
-	return dbgp.parseInitLine(strings.TrimRight(string(data), "\000"))
+	return dbgp.parseCloudInitLine(strings.TrimRight(string(data), "\000"))
 }
 
 func (dbgp *DbgpServer) SendResponse(xml string) error {
