@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/bitbored/go-ansicon" // BSD-3
 	"github.com/chzyer/readline"     // MIT
-	"github.com/derickr/dbgp-tools/lib"
+	"github.com/derickr/dbgp-tools/lib/protocol"
 	. "github.com/logrusorgru/aurora" // WTFPL
 	"github.com/pborman/getopt/v2"    // BSD-3
 	"net"
@@ -41,15 +41,15 @@ type CommandRunner interface {
 	SignalAbort()
 }
 
-func setupSignalHandler(dbgp CommandRunner) {
+func setupSignalHandler(protocol CommandRunner) {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	go func() {
 		for _ = range c {
-			if dbgp.IsInConversation() {
-				dbgp.AddCommandToRun("break")
+			if protocol.IsInConversation() {
+				protocol.AddCommandToRun("break")
 			} else {
-				dbgp.SignalAbort()
+				protocol.SignalAbort()
 			}
 		}
 	}()
@@ -62,7 +62,7 @@ func isValidXml(xml string) bool {
 func handleConnection(c net.Conn, rl *readline.Instance) error {
 	var lastCommand string
 
-	reader := dbgp.NewDbgpClient(c, smartClient)
+	reader := protocol.NewDbgpClient(c, smartClient)
 
 	if smartClient {
 		setupSignalHandler(reader)
@@ -70,7 +70,7 @@ func handleConnection(c net.Conn, rl *readline.Instance) error {
 	}
 
 	for {
-		var formattedResponse dbgp.Response
+		var formattedResponse protocol.Response
 
 		response, err, timedOut := reader.ReadResponse()
 
@@ -180,16 +180,16 @@ func registerWithProxy(address string, idekey string) error {
 		return err
 	}
 
-	dbgp := dbgp.NewDbgpClient(conn, false)
+	protocol := protocol.NewDbgpClient(conn, false)
 
 	command := "proxyinit -m 1 -k " + idekey + " -p " + strconv.Itoa(port)
 	if ssl {
 		command = command + " -s 1"
 	}
 
-	dbgp.SendCommand(command)
+	protocol.SendCommand(command)
 
-	response, err, _ := dbgp.ReadResponse()
+	response, err, _ := protocol.ReadResponse()
 	if err != nil {
 		return fmt.Errorf("proxyinit failed: %s", err)
 	}
@@ -198,7 +198,7 @@ func registerWithProxy(address string, idekey string) error {
 		fmt.Fprintf(output, "%s\n", Faint(response))
 	}
 
-	formatted := dbgp.FormatXML(response)
+	formatted := protocol.FormatXML(response)
 
 	fmt.Fprintln(output, formatted)
 
@@ -215,13 +215,13 @@ func unregisterWithProxy(address string, idekey string) error {
 		return err
 	}
 
-	dbgp := dbgp.NewDbgpClient(conn, false)
+	protocol := protocol.NewDbgpClient(conn, false)
 
 	command := "proxystop -k " + idekey
 
-	dbgp.SendCommand(command)
+	protocol.SendCommand(command)
 
-	response, err, _ := dbgp.ReadResponse()
+	response, err, _ := protocol.ReadResponse()
 	if err != nil {
 		return fmt.Errorf("proxystop failed: %s", err)
 	}
@@ -230,7 +230,7 @@ func unregisterWithProxy(address string, idekey string) error {
 		fmt.Fprintf(output, "%s\n", Faint(response))
 	}
 
-	formatted := dbgp.FormatXML(response)
+	formatted := protocol.FormatXML(response)
 	fmt.Fprintln(output, formatted)
 
 	if !formatted.IsSuccess() {
@@ -521,13 +521,13 @@ func runAsCloudClient() {
 	defer conn.Close()
 	defer fmt.Fprintf(output, "Disconnect\n")
 
-	dbgp := dbgp.NewDbgpClient(conn, false)
+	protocol := protocol.NewDbgpClient(conn, false)
 
 	rl := initReadline()
 	defer rl.Close()
 
 	command := "cloudinit -u " + cloudUser
-	dbgp.SendCommand(command)
+	protocol.SendCommand(command)
 
 	for {
 		err = handleConnection(conn, rl)

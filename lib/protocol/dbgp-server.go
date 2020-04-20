@@ -1,10 +1,11 @@
-package dbgp
+package protocol
 
 import (
 	"bufio"
 	"fmt"
 	"github.com/derickr/dbgp-tools/lib/command"
 	"github.com/derickr/dbgp-tools/lib/connections"
+	"github.com/derickr/dbgp-tools/lib/server"
 	"io"
 	"net"
 	"strconv"

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/bitbored/go-ansicon" // BSD-3
 	"github.com/derickr/dbgp-tools/lib/connections"
 	"github.com/derickr/dbgp-tools/lib/proxy"
 	"github.com/derickr/dbgp-tools/lib/server"

@@ -3,6 +3,7 @@ package command
 import (
 	"fmt"
 	"github.com/derickr/dbgp-tools/lib/connections"
+	"github.com/derickr/dbgp-tools/lib/server"
 	"github.com/derickr/dbgp-tools/lib/xml"
 	"net"
 )

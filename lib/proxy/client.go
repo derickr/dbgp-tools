@@ -3,8 +3,9 @@ package proxy
 import (
 	"crypto/tls"
 	"fmt"
-	"github.com/derickr/dbgp-tools/lib"
 	"github.com/derickr/dbgp-tools/lib/connections"
+	"github.com/derickr/dbgp-tools/lib/protocol"
+	"github.com/derickr/dbgp-tools/lib/server"
 	"io"
 	"net"
 	"time"
@@ -101,7 +102,7 @@ func (handler *ServerHandler) setupForwarder(conn net.Conn, initialPacket []byte
 }
 
 func (handler *ServerHandler) Handle(conn net.Conn) error {
-	reader := dbgp.NewDbgpClient(conn, false)
+	reader := protocol.NewDbgpClient(conn, false)
 
 	response, err, _ := reader.ReadResponse()
 	if err != nil {

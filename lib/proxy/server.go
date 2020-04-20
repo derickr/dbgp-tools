@@ -2,8 +2,9 @@ package proxy
 
 import (
 	"fmt"
-	"github.com/derickr/dbgp-tools/lib"
 	"github.com/derickr/dbgp-tools/lib/connections"
+	"github.com/derickr/dbgp-tools/lib/protocol"
+	"github.com/derickr/dbgp-tools/lib/server"
 	"net"
 )
 
@@ -16,7 +17,7 @@ func NewClientHandler(connectionList *connections.ConnectionList) *ClientHandler
 }
 
 func (handler *ClientHandler) Handle(conn net.Conn) error {
-	reader := dbgp.NewDbgpServer(conn, handler.connectionList)
+	reader := protocol.NewDbgpServer(conn, handler.connectionList)
 
 	cmd, err := reader.ReadCommand()
 	if err != nil {

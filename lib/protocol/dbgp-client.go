@@ -1,4 +1,4 @@
-package dbgp
+package protocol
 
 import (
 	"bufio"
