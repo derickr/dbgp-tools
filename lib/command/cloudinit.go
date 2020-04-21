@@ -11,12 +11,13 @@ import (
 type CloudInitCommand struct {
 	connectionList *connections.ConnectionList
 	connection     *net.Conn
+	logger         server.Logger
 	userId         string
 	needsRemoving  bool
 }
 
-func NewCloudInitCommand(connectionList *connections.ConnectionList, connection *net.Conn) *CloudInitCommand {
-	return &CloudInitCommand{connectionList: connectionList, connection: connection, userId: "", needsRemoving: true}
+func NewCloudInitCommand(connectionList *connections.ConnectionList, connection *net.Conn, logger server.Logger) *CloudInitCommand {
+	return &CloudInitCommand{connectionList: connectionList, connection: connection, logger: logger, userId: "", needsRemoving: true}
 }
 
 func (ciCommand *CloudInitCommand) GetName() string {
@@ -32,10 +33,10 @@ func (ciCommand *CloudInitCommand) AddConnection() error {
 	err := ciCommand.connectionList.Add(conn)
 
 	if err == nil {
-		fmt.Printf("  - Added connection for Cloud User '%s' from %s\n", ciCommand.GetName(), (*ciCommand.connection).RemoteAddr())
+		ciCommand.logger.LogUserInfo("conn", ciCommand.userId, "Added connection for Cloud User '%s' from %s", ciCommand.userId, (*ciCommand.connection).RemoteAddr())
 	} else {
 		ciCommand.needsRemoving = false
-		fmt.Printf("  - Could not add connection: %s\n", err.Error())
+		ciCommand.logger.LogWarning("conn", "Could not add connection: %s", err.Error())
 	}
 
 	return err
@@ -43,7 +44,7 @@ func (ciCommand *CloudInitCommand) AddConnection() error {
 
 func (ciCommand *CloudInitCommand) Close() {
 	if ciCommand.needsRemoving {
-		fmt.Printf("  - Removed connection for Cloud User '%s' from %s\n", ciCommand.userId, (*ciCommand.connection).RemoteAddr())
+		ciCommand.logger.LogUserInfo("conn", ciCommand.userId, "Removed connection for Cloud User '%s' from %s", ciCommand.userId, (*ciCommand.connection).RemoteAddr())
 		ciCommand.connectionList.RemoveByKey(ciCommand.userId)
 	}
 }
@@ -55,11 +56,11 @@ func (ciCommand *CloudInitCommand) Handle() (string, error) {
 	err := ciCommand.connectionList.Add(conn)
 
 	if err == nil {
-		fmt.Printf("  - Added connection for Cloud User '%s' from %s\n", ciCommand.userId, (*ciCommand.connection).RemoteAddr())
+		ciCommand.logger.LogUserInfo("conn", ciCommand.userId, "Added connection for Cloud User '%s' from %s", ciCommand.userId, (*ciCommand.connection).RemoteAddr())
 		init = dbgpXml.NewCloudInit(true, ciCommand.userId, nil)
 	} else {
 		ciCommand.needsRemoving = false
-		fmt.Printf("  - Could not add connection: %s\n", err.Error())
+		ciCommand.logger.LogUserWarning("conn", ciCommand.userId, "Could not add connection: %s", err.Error())
 		init = dbgpXml.NewCloudInit(false, ciCommand.userId, &dbgpXml.CloudInitError{ID: "ERR-01", Message: err.Error()})
 	}
 
@@ -67,8 +68,8 @@ func (ciCommand *CloudInitCommand) Handle() (string, error) {
 }
 
 /* cloudinit -u <userid> */
-func CreateCloudInit(connectionsList *connections.ConnectionList, connection *net.Conn, arguments []string) (DbgpCloudInitCommand, error) {
-	ciCommand := NewCloudInitCommand(connectionsList, connection)
+func CreateCloudInit(connectionsList *connections.ConnectionList, connection *net.Conn, arguments []string, logger server.Logger) (DbgpCloudInitCommand, error) {
+	ciCommand := NewCloudInitCommand(connectionsList, connection, logger)
 
 	expectValue := false
 	expectValueFor := ""

@@ -13,17 +13,19 @@ import (
 )
 
 type DbgpServer struct {
+	logger         server.Logger
 	connection     net.Conn
 	connectionList *connections.ConnectionList
 	reader         *bufio.Reader
 	writer         io.Writer
 }
 
-func NewDbgpServer(c net.Conn, connectionList *connections.ConnectionList) *DbgpServer {
+func NewDbgpServer(c net.Conn, connectionList *connections.ConnectionList, logger server.Logger) *DbgpServer {
 	var tmp DbgpServer
 
 	tmp.connection = c
 	tmp.connectionList = connectionList
+	tmp.logger = logger
 	tmp.reader = bufio.NewReader(c)
 	tmp.writer = c
 
@@ -36,10 +38,10 @@ func (dbgp *DbgpServer) parseLine(data string) (command.DbgpCommand, error) {
 	switch parts[0] {
 	case "proxyinit":
 		host, _, _ := net.SplitHostPort(dbgp.connection.RemoteAddr().String())
-		return command.CreateProxyInit(host, dbgp.connectionList, parts[1:])
+		return command.CreateProxyInit(host, dbgp.connectionList, parts[1:], dbgp.logger)
 
 	case "proxystop":
-		return command.CreateProxyStop(dbgp.connectionList, parts[1:])
+		return command.CreateProxyStop(dbgp.connectionList, parts[1:], dbgp.logger)
 	}
 
 	return nil, fmt.Errorf("Don't understand command '%s'", parts)
@@ -50,7 +52,7 @@ func (dbgp *DbgpServer) parseCloudInitLine(data string) (command.DbgpCloudInitCo
 
 	switch parts[0] {
 	case "cloudinit":
-		return command.CreateCloudInit(dbgp.connectionList, &dbgp.connection, parts[1:])
+		return command.CreateCloudInit(dbgp.connectionList, &dbgp.connection, parts[1:], dbgp.logger)
 	}
 
 	return nil, fmt.Errorf("Don't understand command '%s'", parts)
@@ -61,7 +63,7 @@ func (dbgp *DbgpServer) ReadCommand() (command.DbgpCommand, error) {
 	data, err := dbgp.reader.ReadBytes('\000')
 
 	if err != nil {
-		fmt.Println("Error reading data:", err.Error())
+		dbgp.logger.LogError("conn", "Error reading data: %s", err.Error())
 		return nil, err
 	}
 
@@ -73,7 +75,7 @@ func (dbgp *DbgpServer) ReadCloudInitCommand() (command.DbgpCloudInitCommand, er
 	data, err := dbgp.reader.ReadBytes('\000')
 
 	if err != nil {
-		fmt.Println("Error reading data:", err.Error())
+		dbgp.logger.LogError("conn", "Error reading data: %s", err.Error())
 		return nil, err
 	}
 

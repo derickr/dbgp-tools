@@ -14,11 +14,12 @@ import (
 const sleepTimeout = time.Millisecond * 50
 
 type ServerHandler struct {
+	logger         server.Logger
 	connectionList *connections.ConnectionList
 }
 
-func NewServerHandler(connectionList *connections.ConnectionList) *ServerHandler {
-	return &ServerHandler{connectionList: connectionList}
+func NewServerHandler(connectionList *connections.ConnectionList, logger server.Logger) *ServerHandler {
+	return &ServerHandler{connectionList: connectionList, logger: logger}
 }
 
 func connectToIDE(clientConnection *connections.Connection) (net.Conn, error) {
@@ -35,18 +36,18 @@ func connectToIDE(clientConnection *connections.Connection) (net.Conn, error) {
 }
 
 func (handler *ServerHandler) setupForwarder(conn net.Conn, initialPacket []byte, clientConnection *connections.Connection) error {
-	fmt.Printf("  - Connecting to %s\n", clientConnection.FullAddress())
+	handler.logger.LogUserInfo("conn", clientConnection.GetKey(), "Connecting to %s", clientConnection.FullAddress())
 	client, err := connectToIDE(clientConnection)
 
 	if err != nil {
-		fmt.Printf("    - IDE not connected: %s\n", err)
+		handler.logger.LogUserError("conn", clientConnection.GetKey(), "IDE not connected: %s", err)
 		return err
 	}
 
 	defer func(closer io.Closer) {
 		err := closer.Close()
 		if err != nil {
-			fmt.Printf("%v", err)
+			handler.logger.LogUserError("conn", clientConnection.GetKey(), "Closer didn't work: %v", err)
 		}
 	}(client)
 
@@ -54,14 +55,14 @@ func (handler *ServerHandler) setupForwarder(conn net.Conn, initialPacket []byte
 		return err
 	}
 
-	fmt.Println("    - IDE connected")
+	handler.logger.LogUserInfo("conn", clientConnection.GetKey(), "IDE connected")
 	reassembledPacket := fmt.Sprintf("%d\000%s", len(initialPacket)-1, initialPacket)
 	_, err = client.Write([]byte(reassembledPacket))
 	if err != nil {
 		return err
 	}
 
-	fmt.Println("    - Init forwarded, start pipe")
+	handler.logger.LogUserInfo("conn", clientConnection.GetKey(), "Init forwarded, start pipe")
 	clientChan := make(chan error)
 	serverChan := make(chan error)
 
@@ -90,10 +91,10 @@ func (handler *ServerHandler) setupForwarder(conn net.Conn, initialPacket []byte
 	for {
 		select {
 		case err = <-serverChan:
-			fmt.Println("  - IDE closed connection")
+			handler.logger.LogUserInfo("conn", clientConnection.GetKey(), "IDE closed connection")
 			return nil
 		case err = <-clientChan:
-			fmt.Println("  - Xdebug connection closed")
+			handler.logger.LogUserInfo("conn", clientConnection.GetKey(), "Xdebug connection closed")
 			return nil
 		default:
 			time.Sleep(sleepTimeout)
@@ -102,7 +103,7 @@ func (handler *ServerHandler) setupForwarder(conn net.Conn, initialPacket []byte
 }
 
 func (handler *ServerHandler) Handle(conn net.Conn) error {
-	reader := protocol.NewDbgpClient(conn, false)
+	reader := protocol.NewDbgpClient(conn, false, handler.logger)
 
 	response, err, _ := reader.ReadResponse()
 	if err != nil {
@@ -114,7 +115,7 @@ func (handler *ServerHandler) Handle(conn net.Conn) error {
 	client, ok := handler.connectionList.FindByKey(init.IDEKey)
 
 	if ok {
-		fmt.Printf("  - Found connection for IDE Key '%s': %s\n", init.IDEKey, client)
+		handler.logger.LogUserInfo("conn", init.IDEKey, "Found connection for IDE Key '%s': %s", init.IDEKey, client.FullAddress())
 		handler.setupForwarder(conn, []byte(response), client)
 	} else {
 		return fmt.Errorf("Could not find connection for IDE Key '%s'", init.IDEKey)

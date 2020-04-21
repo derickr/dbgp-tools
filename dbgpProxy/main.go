@@ -21,6 +21,7 @@ var (
 	clientSSLAddress = "localhost:9011"
 	serverAddress    = "localhost:9000"
 	serverSSLAddress = "localhost:9010"
+	output           = ansicon.Convert(os.Stdout)
 	version          = false
 )
 
@@ -40,7 +41,7 @@ func handleArguments() {
 	getopt.Parse()
 
 	if help {
-		getopt.PrintUsage(os.Stdout)
+		getopt.PrintUsage(output)
 		os.Exit(1)
 	}
 	if version {
@@ -56,25 +57,27 @@ func main() {
 	printStartUp()
 	handleArguments()
 
+	logger := server.NewConsoleLogger(output)
+
 	ideConnectionList := connections.NewConnectionList(formatError)
 
 	syncGroup := &sync.WaitGroup{}
-	clientServer := server.NewServer("client", resolveTCP(clientAddress), syncGroup)
-	serverServer := server.NewServer("server", resolveTCP(serverAddress), syncGroup)
-	clientSSLServer := server.NewServer("client-ssl", resolveTCP(clientSSLAddress), syncGroup)
-	serverSSLServer := server.NewServer("server-ssl", resolveTCP(serverSSLAddress), syncGroup)
+	clientServer := server.NewServer("client", resolveTCP(clientAddress), syncGroup, logger)
+	serverServer := server.NewServer("server", resolveTCP(serverAddress), syncGroup, logger)
+	clientSSLServer := server.NewServer("client-ssl", resolveTCP(clientSSLAddress), syncGroup, logger)
+	serverSSLServer := server.NewServer("server-ssl", resolveTCP(serverSSLAddress), syncGroup, logger)
 
-	go clientServer.Listen(proxy.NewClientHandler(ideConnectionList))
-	go serverServer.Listen(proxy.NewServerHandler(ideConnectionList))
-	go clientSSLServer.ListenSSL(proxy.NewClientHandler(ideConnectionList))
-	go serverSSLServer.ListenSSL(proxy.NewServerHandler(ideConnectionList))
+	go clientServer.Listen(proxy.NewClientHandler(ideConnectionList, logger))
+	go serverServer.Listen(proxy.NewServerHandler(ideConnectionList, logger))
+	go clientSSLServer.ListenSSL(proxy.NewClientHandler(ideConnectionList, logger))
+	go serverSSLServer.ListenSSL(proxy.NewServerHandler(ideConnectionList, logger))
 
-	fmt.Println("Proxy started")
+	logger.LogInfo("server", "Proxy started")
 
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt)
 
-	fmt.Printf("- Signal received: %s\n", <-signals)
+	logger.LogWarning("server", "Signal received: %s", <-signals)
 
 	clientServer.Stop()
 	serverServer.Stop()
@@ -82,7 +85,7 @@ func main() {
 	serverSSLServer.Stop()
 	syncGroup.Wait()
 
-	fmt.Println("Proxy stopped")
+	logger.LogInfo("server", "Proxy stopped")
 }
 
 func resolveTCP(host string) *net.TCPAddr {

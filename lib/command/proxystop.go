@@ -10,10 +10,11 @@ import (
 type ProxyStopCommand struct {
 	connectionList *connections.ConnectionList
 	ideKey         string
+	logger         server.Logger
 }
 
-func NewProxyStopCommand(connectionList *connections.ConnectionList) *ProxyStopCommand {
-	return &ProxyStopCommand{connectionList: connectionList, ideKey: ""}
+func NewProxyStopCommand(connectionList *connections.ConnectionList, logger server.Logger) *ProxyStopCommand {
+	return &ProxyStopCommand{connectionList: connectionList, ideKey: "", logger: logger}
 }
 
 func (piCommand *ProxyStopCommand) GetName() string {
@@ -26,10 +27,10 @@ func (piCommand *ProxyStopCommand) Handle() (string, error) {
 	err := piCommand.connectionList.RemoveByKey(piCommand.ideKey)
 
 	if err == nil {
-		fmt.Printf("  - Removed connection for IDE Key '%s'\n", piCommand.ideKey)
+		piCommand.logger.LogUserInfo("conn", piCommand.ideKey, "Removed connection for IDE Key '%s'", piCommand.ideKey)
 		stop = dbgpXml.NewProxyStop(true, piCommand.ideKey, nil)
 	} else {
-		fmt.Printf("  - Could not remove connection: %s\n", err.Error())
+		piCommand.logger.LogUserWarning("conn", piCommand.ideKey, "Could not remove connection: %s", err.Error())
 		stop = dbgpXml.NewProxyStop(false, piCommand.ideKey, &dbgpXml.ProxyInitError{ID: "ERR-02", Message: err.Error()})
 	}
 
@@ -37,8 +38,8 @@ func (piCommand *ProxyStopCommand) Handle() (string, error) {
 }
 
 /* proxystop -k PHPSTORM */
-func CreateProxyStop(connectionList *connections.ConnectionList, arguments []string) (DbgpCommand, error) {
-	piCommand := NewProxyStopCommand(connectionList)
+func CreateProxyStop(connectionList *connections.ConnectionList, arguments []string, logger server.Logger) (DbgpCommand, error) {
+	piCommand := NewProxyStopCommand(connectionList, logger)
 
 	expectValue := false
 	expectValueFor := ""

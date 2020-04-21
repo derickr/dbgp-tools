@@ -14,14 +14,16 @@ type Handler interface {
 }
 
 type Server struct {
+	logger     Logger
 	address    *net.TCPAddr
 	group      *sync.WaitGroup
 	stop       bool
 	serverType string
 }
 
-func NewServer(serverType string, address *net.TCPAddr, group *sync.WaitGroup) *Server {
+func NewServer(serverType string, address *net.TCPAddr, group *sync.WaitGroup, logger Logger) *Server {
 	return &Server{
+		logger,
 		address,
 		group,
 		false,
@@ -40,7 +42,7 @@ func (server *Server) Listen(handler Handler) {
 
 	defer server.closeConnection(listener)
 
-	fmt.Printf("Started %s server on %s\n", server.serverType, server.address)
+	server.logger.LogInfo("server", "Started %s server on %s", server.serverType, server.address)
 
 	for {
 		if server.stop {
@@ -59,7 +61,7 @@ func (server *Server) Listen(handler Handler) {
 		go server.handleConnection(conn, handler)
 	}
 
-	fmt.Printf("Shutdown %s server\n", server.serverType)
+	server.logger.LogInfo("server", "Shutdown %s server", server.serverType)
 }
 
 func (server *Server) ListenSSL(handler Handler) {
@@ -68,7 +70,7 @@ func (server *Server) ListenSSL(handler Handler) {
 
 	cert, err := tls.LoadX509KeyPair("certs/fullchain.pem", "certs/privkey.pem")
 	if err != nil {
-		fmt.Printf("server: loadkeys: %s", err)
+		server.logger.LogError("server", "Can not load SSL keys: %s", err)
 		panic(err)
 	}
 	config := tls.Config{Certificates: []tls.Certificate{cert}}
@@ -80,7 +82,7 @@ func (server *Server) ListenSSL(handler Handler) {
 
 	defer server.closeConnection(listener)
 
-	fmt.Printf("Started %s server on %s\n", server.serverType, server.address)
+	server.logger.LogInfo("server", "Started %s SSL server on %s", server.serverType, server.address)
 
 	for {
 		if server.stop {
@@ -99,27 +101,28 @@ func (server *Server) ListenSSL(handler Handler) {
 		go server.handleConnection(tls.Server(conn, &config), handler)
 	}
 
-	fmt.Printf("Shutdown %s server\n", server.serverType)
+	server.logger.LogInfo("server", "Shutdown %s SSL server", server.serverType)
 }
 
 func (server *Server) handleConnection(conn net.Conn, handler Handler) {
 	defer server.closeConnection(conn)
 	server.group.Add(1)
 	defer server.group.Done()
-	fmt.Printf("- Start new %s connection from %s\n", server.serverType, conn.RemoteAddr())
+
+	server.logger.LogInfo("conn", "Start new %s connection from %s", server.serverType, conn.RemoteAddr())
 	err := handler.Handle(conn)
 
 	if err != nil {
-		fmt.Printf("  - Handler response error: %s\n", err)
+		server.logger.LogWarning("conn", "Handler response error: %s", err)
 	}
 
-	fmt.Printf("- Closing %s connection from %s\n", server.serverType, conn.RemoteAddr())
+	server.logger.LogInfo("conn", "Closing %s connection from %s", server.serverType, conn.RemoteAddr())
 }
 
 func (server *Server) closeConnection(closer io.Closer) {
 	err := closer.Close()
 	if err != nil {
-		fmt.Printf("  - Couldn't close connection: %s\n", err)
+		server.logger.LogWarning("conn", "Couldn't close connection: %s", err)
 	}
 }
 

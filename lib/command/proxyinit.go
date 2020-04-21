@@ -12,13 +12,14 @@ type ProxyInitCommand struct {
 	connectionList    *connections.ConnectionList
 	ideKey            string
 	ipAddress         string
+	logger            server.Logger
 	port              int
 	multipleSupported bool
 	ssl               bool
 }
 
-func NewProxyInitCommand(ipAddress string, connectionList *connections.ConnectionList) *ProxyInitCommand {
-	return &ProxyInitCommand{connectionList: connectionList, ideKey: "", ipAddress: ipAddress, port: 9000, multipleSupported: false}
+func NewProxyInitCommand(ipAddress string, connectionList *connections.ConnectionList, logger server.Logger) *ProxyInitCommand {
+	return &ProxyInitCommand{connectionList: connectionList, ideKey: "", ipAddress: ipAddress, logger: logger, port: 9000, multipleSupported: false}
 }
 
 func (piCommand *ProxyInitCommand) GetName() string {
@@ -33,13 +34,13 @@ func (piCommand *ProxyInitCommand) Handle() (string, error) {
 
 	if err == nil {
 		if piCommand.ssl {
-			fmt.Printf("  - Added SSL connection for IDE Key '%s': %s:%d\n", piCommand.ideKey, piCommand.ipAddress, piCommand.port)
+			piCommand.logger.LogUserInfo("conn", piCommand.ideKey, "Added SSL connection for IDE Key '%s': %s:%d", piCommand.ideKey, piCommand.ipAddress, piCommand.port)
 		} else {
-			fmt.Printf("  - Added connection for IDE Key '%s': %s:%d\n", piCommand.ideKey, piCommand.ipAddress, piCommand.port)
+			piCommand.logger.LogUserInfo("conn", piCommand.ideKey, "Added connection for IDE Key '%s': %s:%d", piCommand.ideKey, piCommand.ipAddress, piCommand.port)
 		}
 		init = dbgpXml.NewProxyInit(true, piCommand.ideKey, piCommand.ipAddress, piCommand.port, piCommand.ssl, nil)
 	} else {
-		fmt.Printf("  - Could not add connection: %s\n", err.Error())
+		piCommand.logger.LogUserWarning("conn", piCommand.ideKey, "Could not add connection: %s", err.Error())
 		init = dbgpXml.NewProxyInit(false, piCommand.ideKey, piCommand.ipAddress, piCommand.port, piCommand.ssl, &dbgpXml.ProxyInitError{ID: "ERR-01", Message: err.Error()})
 	}
 
@@ -47,8 +48,8 @@ func (piCommand *ProxyInitCommand) Handle() (string, error) {
 }
 
 /* proxyinit -p 9000 -k PHPSTORM -m 1 -s ? */
-func CreateProxyInit(ipAddress string, connectionList *connections.ConnectionList, arguments []string) (DbgpCommand, error) {
-	piCommand := NewProxyInitCommand(ipAddress, connectionList)
+func CreateProxyInit(ipAddress string, connectionList *connections.ConnectionList, arguments []string, logger server.Logger) (DbgpCommand, error) {
+	piCommand := NewProxyInitCommand(ipAddress, connectionList, logger)
 
 	expectValue := false
 	expectValueFor := ""

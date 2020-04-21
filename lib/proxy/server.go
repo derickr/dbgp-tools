@@ -9,15 +9,16 @@ import (
 )
 
 type ClientHandler struct {
+	logger         server.Logger
 	connectionList *connections.ConnectionList
 }
 
-func NewClientHandler(connectionList *connections.ConnectionList) *ClientHandler {
-	return &ClientHandler{connectionList: connectionList}
+func NewClientHandler(connectionList *connections.ConnectionList, logger server.Logger) *ClientHandler {
+	return &ClientHandler{connectionList: connectionList, logger: logger}
 }
 
 func (handler *ClientHandler) Handle(conn net.Conn) error {
-	reader := protocol.NewDbgpServer(conn, handler.connectionList)
+	reader := protocol.NewDbgpServer(conn, handler.connectionList, handler.logger)
 
 	cmd, err := reader.ReadCommand()
 	if err != nil {

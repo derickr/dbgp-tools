@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/xml"
 	"fmt"
+	"github.com/derickr/dbgp-tools/lib/server"
 	"github.com/derickr/dbgp-tools/lib/xml"
 	"golang.org/x/net/html/charset"
 	"io"
@@ -22,6 +23,7 @@ type Response interface {
 
 type dbgpClient struct {
 	connection  net.Conn
+	logger      server.Logger
 	reader      *bufio.Reader
 	writer      io.Writer
 	counter     int
@@ -33,10 +35,11 @@ type dbgpClient struct {
 	commandsToRun    []string
 }
 
-func NewDbgpClient(c net.Conn, isSmart bool) *dbgpClient {
+func NewDbgpClient(c net.Conn, isSmart bool, logger server.Logger) *dbgpClient {
 	var tmp dbgpClient
 
 	tmp.connection = c
+	tmp.logger = logger
 	tmp.reader = bufio.NewReader(c)
 	tmp.writer = c
 	tmp.counter = 1
@@ -289,13 +292,13 @@ func (dbgp *dbgpClient) SendCommand(line string) error {
 
 	_, err := dbgp.writer.Write([]byte(line))
 	if err != nil {
-		fmt.Println("Error writing:", err.Error())
+		dbgp.logger.LogError("Error writing data: %s", err.Error())
 		return err
 	}
 
 	_, err = dbgp.writer.Write([]byte("\000"))
 	if err != nil {
-		fmt.Println("Error writing:", err.Error())
+		dbgp.logger.LogError("Error writing data: %s", err.Error())
 		return err
 	}
 

@@ -6,6 +6,7 @@ import (
 	"github.com/bitbored/go-ansicon" // BSD-3
 	"github.com/chzyer/readline"     // MIT
 	"github.com/derickr/dbgp-tools/lib/protocol"
+	"github.com/derickr/dbgp-tools/lib/server"
 	. "github.com/logrusorgru/aurora" // WTFPL
 	"github.com/pborman/getopt/v2"    // BSD-3
 	"net"
@@ -62,7 +63,7 @@ func isValidXml(xml string) bool {
 func handleConnection(c net.Conn, rl *readline.Instance) error {
 	var lastCommand string
 
-	reader := protocol.NewDbgpClient(c, smartClient)
+	reader := protocol.NewDbgpClient(c, smartClient, logger)
 
 	if smartClient {
 		setupSignalHandler(reader)
@@ -180,7 +181,7 @@ func registerWithProxy(address string, idekey string) error {
 		return err
 	}
 
-	protocol := protocol.NewDbgpClient(conn, false)
+	protocol := protocol.NewDbgpClient(conn, false, logger)
 
 	command := "proxyinit -m 1 -k " + idekey + " -p " + strconv.Itoa(port)
 	if ssl {
@@ -215,7 +216,7 @@ func unregisterWithProxy(address string, idekey string) error {
 		return err
 	}
 
-	protocol := protocol.NewDbgpClient(conn, false)
+	protocol := protocol.NewDbgpClient(conn, false, logger)
 
 	command := "proxystop -k " + idekey
 
@@ -256,6 +257,7 @@ var (
 	version     = false
 	unregister  = ""
 	output      = ansicon.Convert(os.Stdout)
+	logger      = server.NewConsoleLogger(output)
 )
 
 func printStartUp() {
@@ -521,7 +523,7 @@ func runAsCloudClient() {
 	defer conn.Close()
 	defer fmt.Fprintf(output, "Disconnect\n")
 
-	protocol := protocol.NewDbgpClient(conn, false)
+	protocol := protocol.NewDbgpClient(conn, false, logger)
 
 	rl := initReadline()
 	defer rl.Close()
