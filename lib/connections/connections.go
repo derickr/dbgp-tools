@@ -20,6 +20,7 @@ type Connection struct {
 	port            string
 	ssl             bool
 	connection      *net.Conn
+	claimed         bool
 	DebugRequests   chan int
 	ControlRequests chan *ConnectionControl
 }
@@ -31,6 +32,7 @@ func NewConnection(ideKey string, ipAddress string, port string, ssl bool, conne
 		port:            port,
 		ssl:             ssl,
 		connection:      connection,
+		claimed:         false,
 		DebugRequests:   make(chan int),
 		ControlRequests: make(chan *ConnectionControl),
 	}
@@ -99,4 +101,38 @@ func (list *ConnectionList) FindByKey(ideKey string) (*Connection, bool) {
 	connection, ok := list.connections[ideKey]
 
 	return connection, ok
+}
+
+func (list *ConnectionList) ClaimConnection(ideKey string) (*Connection, error) {
+	list.Lock()
+	defer list.Unlock()
+
+	connection, ok := list.connections[ideKey]
+
+	if !ok {
+		return nil, fmt.Errorf("Can not find the connection with key '%s' to claim", ideKey)
+	}
+	if connection.claimed {
+		return nil, fmt.Errorf("The connection with key '%s' is already claimed", ideKey)
+	}
+	connection.claimed = true
+
+	return connection, nil
+}
+
+func (list *ConnectionList) UnclaimConnection(ideKey string) error {
+	list.Lock()
+	defer list.Unlock()
+
+	connection, ok := list.connections[ideKey]
+
+	if !ok {
+		return fmt.Errorf("Can not find the connection with key '%s' to unclaim", ideKey)
+	}
+	if !connection.claimed {
+		return fmt.Errorf("The connection with key '%s' was not claimed", ideKey)
+	}
+	connection.claimed = false
+
+	return nil
 }
