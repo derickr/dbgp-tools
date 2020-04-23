@@ -5,6 +5,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	. "github.com/logrusorgru/aurora" // WTFPL
+	"strconv"
 )
 
 type CloudInitError struct {
@@ -12,6 +13,18 @@ type CloudInitError struct {
 	ID      string   `xml:"id,attr"`
 	Message string   `xml:"message"`
 }
+
+type CloudInitAccountInfo interface {
+	AsDbgpXmlType()	*AccountInfo
+}
+
+type AccountInfo struct {
+	Name                 string `xml:"name,attr"`
+	Email                string `xml:"name,omit"`
+	Uid                  string `xml:"uid,attr"`
+	ConnectionsRemaining int    `xml:"remaining,attr"`
+}
+
 type CloudInit struct {
 	XMLName     xml.Name        `xml:"cloudinit"`
 	XmlNS       string          `xml:"xmlns,attr"`
@@ -19,12 +32,20 @@ type CloudInit struct {
 	Success     int             `xml:"success,attr"`
 	UserID      string          `xml:"userid,attr"`
 	Error       *CloudInitError `xml:"error,omitempty"`
+	AccountInfo *AccountInfo    `xml:"accountInfo,omitempty"`
 }
 
-func NewCloudInit(success bool, userID string, initError *CloudInitError) *CloudInit {
+func NewCloudInit(success bool, userID string, initError *CloudInitError, accountInfo CloudInitAccountInfo) *CloudInit {
+	var initAccountInfo *AccountInfo = nil
+
 	successStr := 1
+
 	if !success {
 		successStr = 0
+	}
+
+	if accountInfo != nil {
+		initAccountInfo = accountInfo.AsDbgpXmlType()
 	}
 
 	return &CloudInit{
@@ -33,6 +54,7 @@ func NewCloudInit(success bool, userID string, initError *CloudInitError) *Cloud
 		Success:     successStr,
 		UserID:      userID,
 		Error:       initError,
+		AccountInfo: initAccountInfo,
 	}
 }
 
@@ -67,10 +89,15 @@ func (init CloudInit) String() string {
 		return fmt.Sprintf("%s | %s: %s\n",
 			Yellow(Bold("cloudinit")), Bold(Red("failure")), BrightRed(init.Error.Message))
 	} else {
-		return fmt.Sprintf("%s | Connected as %s | XX connections remaining\n\n%s\n",
+		connectionsLeft := "??"
+
+		if init.AccountInfo != nil {
+			connectionsLeft = strconv.Itoa(init.AccountInfo.ConnectionsRemaining)
+		}
+		return fmt.Sprintf("%s | Connected as %s | %s connections remaining\n\n%s\n",
 			Yellow(Bold("cloudinit")),
 			Bold(Yellow(init.UserID)),
-			/*BrightGreen(init.ConnectionsLeft),*/
+			BrightGreen(connectionsLeft),
 			BrightGreen(Bold("Waiting for incoming connection...")))
 	}
 }
