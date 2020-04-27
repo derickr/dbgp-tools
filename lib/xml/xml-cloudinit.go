@@ -35,7 +35,7 @@ type CloudInit struct {
 	AccountInfo *AccountInfo    `xml:"accountInfo,omitempty"`
 }
 
-func NewCloudInit(success bool, userID string, initError *CloudInitError, accountInfo CloudInitAccountInfo) *CloudInit {
+func NewCloudInit(success bool, userID string, initError *CloudInitError, accountInfoValid bool, accountInfo CloudInitAccountInfo) *CloudInit {
 	var initAccountInfo *AccountInfo = nil
 
 	successStr := 1
@@ -44,7 +44,7 @@ func NewCloudInit(success bool, userID string, initError *CloudInitError, accoun
 		successStr = 0
 	}
 
-	if accountInfo != nil {
+	if accountInfoValid {
 		initAccountInfo = accountInfo.AsDbgpXmlType()
 	}
 

@@ -57,11 +57,11 @@ func (ciCommand *CloudInitCommand) Handle() (string, error) {
 
 	if err == nil {
 		ciCommand.logger.LogUserInfo("conn", ciCommand.userId, "Added connection for Cloud User '%s' from %s", ciCommand.userId, (*ciCommand.connection).RemoteAddr())
-		init = dbgpXml.NewCloudInit(true, ciCommand.userId, nil, nil)
+		init = dbgpXml.NewCloudInit(true, ciCommand.userId, nil, false, nil)
 	} else {
 		ciCommand.needsRemoving = false
 		ciCommand.logger.LogUserWarning("conn", ciCommand.userId, "Could not add connection: %s", err.Error())
-		init = dbgpXml.NewCloudInit(false, ciCommand.userId, &dbgpXml.CloudInitError{ID: "ERR-01", Message: err.Error()}, nil)
+		init = dbgpXml.NewCloudInit(false, ciCommand.userId, &dbgpXml.CloudInitError{ID: "ERR-01", Message: err.Error()}, false, nil)
 	}
 
 	return init.AsXML()
