@@ -11,7 +11,4 @@ func handleCloudFlags() {
 }
 
 func handleCloudArguments() {
-	if cloudUser != "" {
-		ssl = true
-	}
 }

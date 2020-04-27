@@ -16,6 +16,9 @@ import (
 var clientVersion = "0.2"
 
 var (
+	cloudUser        = ""
+	CloudDomain      = "cloud.xdebug.com"
+	CloudPort        = "9021"
 	help             = false
 	clientAddress    = "localhost:9001"
 	clientSSLAddress = "localhost:9011"
@@ -32,11 +35,13 @@ func printStartUp() {
 
 func handleArguments() {
 	getopt.Flag(&help, 'h', "Show this help")
-	getopt.FlagLong(&clientAddress, "client", 'c', "Specify the host:port to listen on for IDE (client) connections", "host:port")
+	getopt.FlagLong(&clientAddress, "client", 'i', "Specify the host:port to listen on for IDE (client) connections", "host:port")
 	getopt.FlagLong(&clientSSLAddress, "client-ssl", 0, "Specify the host:port to listen on for IDE (client) SSL connections", "host:port")
 	getopt.FlagLong(&serverAddress, "server", 's', "Specify the host:port to listen on for debugger engine (server) connections", "host:port")
 	getopt.FlagLong(&serverSSLAddress, "server-ssl", 0, "Specify the host:port to listen on for debugger engine (server) SSL connections", "host:port")
 	getopt.Flag(&version, 'v', "Show version number and exit")
+
+	handleCloudFlags()
 
 	getopt.Parse()
 
@@ -54,6 +59,9 @@ func formatError(connection connections.Connection) error {
 }
 
 func main() {
+	var serverServer *server.Server
+	var serverSSLServer *server.Server
+
 	printStartUp()
 	handleArguments()
 
@@ -62,15 +70,20 @@ func main() {
 	ideConnectionList := connections.NewConnectionList(formatError)
 
 	syncGroup := &sync.WaitGroup{}
-	clientServer := server.NewServer("client", resolveTCP(clientAddress), syncGroup, logger)
-	serverServer := server.NewServer("server", resolveTCP(serverAddress), syncGroup, logger)
-	clientSSLServer := server.NewServer("client-ssl", resolveTCP(clientSSLAddress), syncGroup, logger)
-	serverSSLServer := server.NewServer("server-ssl", resolveTCP(serverSSLAddress), syncGroup, logger)
 
+	clientServer := server.NewServer("client", resolveTCP(clientAddress), syncGroup, logger)
+	clientSSLServer := server.NewServer("client-ssl", resolveTCP(clientSSLAddress), syncGroup, logger)
 	go clientServer.Listen(proxy.NewClientHandler(ideConnectionList, logger))
-	go serverServer.Listen(proxy.NewServerHandler(ideConnectionList, logger))
 	go clientSSLServer.ListenSSL(proxy.NewClientHandler(ideConnectionList, logger))
-	go serverSSLServer.ListenSSL(proxy.NewServerHandler(ideConnectionList, logger))
+
+	if cloudUser == "" {
+		serverServer = server.NewServer("server", resolveTCP(serverAddress), syncGroup, logger)
+		serverSSLServer = server.NewServer("server-ssl", resolveTCP(serverSSLAddress), syncGroup, logger)
+		go serverServer.Listen(proxy.NewServerHandler(ideConnectionList, logger))
+		go serverSSLServer.ListenSSL(proxy.NewServerHandler(ideConnectionList, logger))
+	} else {
+		connections.ConnectToCloud(CloudDomain, CloudPort, cloudUser, logger)
+	}
 
 	logger.LogInfo("server", "Proxy started")
 
@@ -80,9 +93,13 @@ func main() {
 	logger.LogWarning("server", "Signal received: %s", <-signals)
 
 	clientServer.Stop()
-	serverServer.Stop()
 	clientSSLServer.Stop()
-	serverSSLServer.Stop()
+
+	if cloudUser == "" {
+		serverServer.Stop()
+		serverSSLServer.Stop()
+	}
+
 	syncGroup.Wait()
 
 	logger.LogInfo("server", "Proxy stopped")

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/bitbored/go-ansicon" // BSD-3
 	"github.com/chzyer/readline"     // MIT
+	"github.com/derickr/dbgp-tools/lib/connections"
 	"github.com/derickr/dbgp-tools/lib/protocol"
 	"github.com/derickr/dbgp-tools/lib/server"
 	. "github.com/logrusorgru/aurora" // WTFPL
@@ -148,35 +149,8 @@ func handleConnection(c net.Conn, rl *readline.Instance) error {
 	return nil
 }
 
-func connectTo(address string) (net.Conn, error) {
-	var conn net.Conn
-	var err error
-	var cert tls.Certificate
-
-	if ssl {
-		cert, err = tls.LoadX509KeyPair("client-certs/client.pem", "client-certs/client.key")
-		if err != nil {
-			return nil, err
-		}
-		config := tls.Config{Certificates: []tls.Certificate{cert}, InsecureSkipVerify: true}
-		conn, err = tls.Dial("tcp", address, &config)
-
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		conn, err = net.Dial("tcp", address)
-
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return conn, nil
-}
-
 func registerWithProxy(address string, idekey string) error {
-	conn, err := connectTo(address)
+	conn, err := connections.ConnectTo(address, ssl)
 	if err != nil {
 		return err
 	}
@@ -211,7 +185,7 @@ func registerWithProxy(address string, idekey string) error {
 }
 
 func unregisterWithProxy(address string, idekey string) error {
-	conn, err := connectTo(address)
+	conn, err := connections.ConnectTo(address, ssl)
 	if err != nil {
 		return err
 	}
@@ -243,7 +217,8 @@ func unregisterWithProxy(address string, idekey string) error {
 
 var (
 	cloudUser   = ""
-	cloudDomain = "a.cloud.xdebug.com:9021"
+	CloudDomain = "cloud.xdebug.com"
+	CloudPort   = "9021"
 	help        = false
 	once        = false
 	port        = 9000
@@ -513,11 +488,11 @@ func runAsNormalClient() {
 	}
 }
 
-func runAsCloudClient() {
-	conn, err := connectTo(cloudDomain)
+func runAsCloudClient(logger server.Logger) {
+	conn, err := connections.ConnectToCloud(CloudDomain, CloudPort, cloudUser, logger)
 
 	if err != nil {
-		fmt.Fprintf(output, "%s '%s': %s\n", BrightRed("Can not connect to Xdebug cloud at"), BrightYellow(cloudDomain), BrightRed(err))
+		fmt.Fprintf(output, "%s '%s': %s\n", BrightRed("Can not connect to Xdebug cloud at"), BrightYellow(CloudDomain), BrightRed(err))
 		return
 	}
 	defer conn.Close()
@@ -546,8 +521,10 @@ func main() {
 	handleArguments()
 	printStartUp()
 
+	logger := server.NewConsoleLogger(os.Stdout)
+
 	if cloudUser != "" {
-		runAsCloudClient()
+		runAsCloudClient(logger)
 	} else {
 		runAsNormalClient()
 	}
