@@ -294,7 +294,7 @@ func (response Response) String() string {
 			output += formatTypemap(response.TID, typemap)
 		}
 
-	case "run", "step_into", "step_over":
+	case "run", "step_into", "step_over", "step_out":
 		if response.Status != "stopping" {
 			output += fmt.Sprintf("%s | %s:%d\n", Black(response.TID), Bold(Green(response.Message.Filename)), Bold(Green(response.Message.LineNo)))
 		}
