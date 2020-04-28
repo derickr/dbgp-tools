@@ -50,7 +50,7 @@ func (server *Server) Listen(handler Handler) {
 		}
 
 		_ = listener.SetDeadline(time.Now().Add(time.Second * 2))
-		conn, err := listener.Accept()
+		conn, err := listener.AcceptTCP()
 		if err != nil {
 			if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
 				continue
@@ -58,6 +58,8 @@ func (server *Server) Listen(handler Handler) {
 			fmt.Print(err)
 			continue
 		}
+		conn.SetKeepAlive(true)
+		conn.SetKeepAlivePeriod(time.Second)
 		go server.handleConnection(conn, handler)
 	}
 
@@ -90,7 +92,7 @@ func (server *Server) ListenSSL(handler Handler) {
 		}
 
 		_ = listener.SetDeadline(time.Now().Add(time.Second * 2))
-		conn, err := listener.Accept()
+		conn, err := listener.AcceptTCP()
 		if err != nil {
 			if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
 				continue
@@ -98,6 +100,8 @@ func (server *Server) ListenSSL(handler Handler) {
 			fmt.Print(err)
 			continue
 		}
+		conn.SetKeepAlive(true)
+		conn.SetKeepAlivePeriod(time.Millisecond * 3)
 		go server.handleConnection(tls.Server(conn, &config), handler)
 	}
 
