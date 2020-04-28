@@ -111,7 +111,7 @@ type Response struct {
 
 	Message Message `xml:"message,omitempty"`
 
-	Error Error `xml:"error,omitempty"`
+	Error *Error `xml:"error,omitempty"`
 
 	Breakpoints []Breakpoint `xml:"breakpoint,omitempty"`
 	Property    []Property   `xml:"property,omitempty"`
@@ -229,6 +229,14 @@ func (response Response) IsSuccess() bool {
 	return !!(response.Success == 1)
 }
 
+func (response Response) GetErrorMessage() string {
+	if response.Error != nil {
+		return response.Error.Message.Text
+	} else {
+		return "no error"
+	}
+}
+
 func (response Response) ExpectMoreResponses() bool {
 	if response.Command == "break" {
 		return true
@@ -252,7 +260,7 @@ func (response Response) String() string {
 
 	output += "\n"
 
-	if response.Error.Code != 0 {
+	if response.Error != nil && response.Error.Code != 0 {
 		return output + formatError(response)
 	}
 

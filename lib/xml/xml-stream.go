@@ -25,6 +25,10 @@ func (stream Stream) IsSuccess() bool {
 	return true
 }
 
+func (stream Stream) GetErrorMessage() string {
+	return ""
+}
+
 func (stream Stream) ExpectMoreResponses() bool {
 	return true
 }

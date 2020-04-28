@@ -71,6 +71,14 @@ func (init ProxyInit) IsSuccess() bool {
 	return !!(init.Success == 1)
 }
 
+func (init ProxyInit) GetErrorMessage() string {
+	if init.Error != nil {
+		return init.Error.Message
+	} else {
+		return "no error"
+	}
+}
+
 func (init ProxyInit) ExpectMoreResponses() bool {
 	return false
 }

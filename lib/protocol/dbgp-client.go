@@ -19,6 +19,7 @@ type Response interface {
 	IsSuccess() bool
 	ExpectMoreResponses() bool
 	ShouldCloseConnection() bool
+	GetErrorMessage() string
 }
 
 type dbgpClient struct {

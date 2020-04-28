@@ -76,6 +76,14 @@ func (init CloudInit) IsSuccess() bool {
 	return !!(init.Success == 1)
 }
 
+func (init CloudInit) GetErrorMessage() string {
+	if init.Error != nil {
+		return init.Error.Message
+	} else {
+		return "no error"
+	}
+}
+
 func (init CloudInit) ExpectMoreResponses() bool {
 	return true
 }

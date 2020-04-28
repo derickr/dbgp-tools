@@ -54,6 +54,10 @@ func (init Init) IsSuccess() bool {
 	return true
 }
 
+func (init Init) GetErrorMessage() string {
+	return ""
+}
+
 func (init Init) ExpectMoreResponses() bool {
 	return false
 }

@@ -51,6 +51,14 @@ func (stop ProxyStop) IsSuccess() bool {
 	return !!(stop.Success == 1)
 }
 
+func (stop ProxyStop) GetErrorMessage() string {
+	if stop.Error != nil {
+		return stop.Error.Message
+	} else {
+		return "no error"
+	}
+}
+
 func (stop ProxyStop) ExpectMoreResponses() bool {
 	return false
 }

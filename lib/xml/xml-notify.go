@@ -25,6 +25,10 @@ func (notify Notify) IsSuccess() bool {
 	return true
 }
 
+func (notify Notify) GetErrorMessage() string {
+	return ""
+}
+
 func (notify Notify) ExpectMoreResponses() bool {
 	return true
 }
