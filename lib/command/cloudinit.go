@@ -33,10 +33,10 @@ func (ciCommand *CloudInitCommand) AddConnection() error {
 	err := ciCommand.connectionList.Add(conn)
 
 	if err == nil {
-		ciCommand.logger.LogUserInfo("conn", ciCommand.userId, "Added connection for Cloud User '%s' from %s", ciCommand.userId, (*ciCommand.connection).RemoteAddr())
+		ciCommand.logger.LogUserInfo("cloudinit", ciCommand.userId, "Added connection from %s", (*ciCommand.connection).RemoteAddr())
 	} else {
 		ciCommand.needsRemoving = false
-		ciCommand.logger.LogWarning("conn", "Could not add connection: %s", err.Error())
+		ciCommand.logger.LogWarning("cloudinit", "Could not add connection: %s", err.Error())
 	}
 
 	return err
@@ -44,7 +44,7 @@ func (ciCommand *CloudInitCommand) AddConnection() error {
 
 func (ciCommand *CloudInitCommand) Close() {
 	if ciCommand.needsRemoving {
-		ciCommand.logger.LogUserInfo("conn", ciCommand.userId, "Removed connection for Cloud User '%s' from %s", ciCommand.userId, (*ciCommand.connection).RemoteAddr())
+		ciCommand.logger.LogUserInfo("cloudinit", ciCommand.userId, "CloudInit::Close: Removed connection for Cloud User from %s", (*ciCommand.connection).RemoteAddr())
 		ciCommand.connectionList.RemoveByKey(ciCommand.userId)
 	}
 }
@@ -56,11 +56,11 @@ func (ciCommand *CloudInitCommand) Handle() (string, error) {
 	err := ciCommand.connectionList.Add(conn)
 
 	if err == nil {
-		ciCommand.logger.LogUserInfo("conn", ciCommand.userId, "Added connection for Cloud User '%s' from %s", ciCommand.userId, (*ciCommand.connection).RemoteAddr())
+		ciCommand.logger.LogUserInfo("cloudinit", ciCommand.userId, "Added connection for Cloud User from %s", (*ciCommand.connection).RemoteAddr())
 		init = dbgpXml.NewCloudInit(true, ciCommand.userId, nil, false, nil)
 	} else {
 		ciCommand.needsRemoving = false
-		ciCommand.logger.LogUserWarning("conn", ciCommand.userId, "Could not add connection: %s", err.Error())
+		ciCommand.logger.LogUserWarning("cloudinit", ciCommand.userId, "Could not add connection: %s", err.Error())
 		init = dbgpXml.NewCloudInit(false, ciCommand.userId, &dbgpXml.CloudInitError{ID: "ERR-01", Message: err.Error()}, false, nil)
 	}
 

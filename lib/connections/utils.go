@@ -40,7 +40,7 @@ func ConnectToCloud(domain string, port string, uid string, logger server.Logger
 
 	host := fmt.Sprintf("%c.%s:%s", (crc32v & 0x0f) + 'a' - 1, domain, port)
 
-	logger.LogInfo("cloud", "Connecting to cloud host '%s'", host)
+	logger.LogInfo("utils", "Connecting to cloud host '%s'", host)
 
 	return ConnectTo(host, true)
 }

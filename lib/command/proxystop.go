@@ -27,10 +27,10 @@ func (piCommand *ProxyStopCommand) Handle() (string, error) {
 	err := piCommand.connectionList.RemoveByKey(piCommand.ideKey)
 
 	if err == nil {
-		piCommand.logger.LogUserInfo("conn", piCommand.ideKey, "Removed connection for IDE Key '%s'", piCommand.ideKey)
+		piCommand.logger.LogUserInfo("proxystop", piCommand.ideKey, "Removed connection for IDE Key '%s'", piCommand.ideKey)
 		stop = dbgpXml.NewProxyStop(true, piCommand.ideKey, nil)
 	} else {
-		piCommand.logger.LogUserWarning("conn", piCommand.ideKey, "Could not remove connection: %s", err.Error())
+		piCommand.logger.LogUserWarning("proxystop", piCommand.ideKey, "Could not remove connection: %s", err.Error())
 		stop = dbgpXml.NewProxyStop(false, piCommand.ideKey, &dbgpXml.ProxyInitError{ID: "ERR-02", Message: err.Error()})
 	}
 

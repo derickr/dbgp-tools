@@ -63,7 +63,11 @@ func (dbgp *DbgpServer) ReadCommand() (command.DbgpCommand, error) {
 	data, err := dbgp.reader.ReadBytes('\000')
 
 	if err != nil {
-		dbgp.logger.LogError("conn", "Error reading data: %s", err.Error())
+		if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
+			dbgp.logger.LogWarning("dbgp-server", "I/O timeout reading data: %s", err.Error())
+		} else {
+			dbgp.logger.LogError("dbgp-server", "Error reading data: %s", err.Error())
+		}
 		return nil, err
 	}
 
@@ -75,7 +79,11 @@ func (dbgp *DbgpServer) ReadCloudInitCommand() (command.DbgpCloudInitCommand, er
 	data, err := dbgp.reader.ReadBytes('\000')
 
 	if err != nil {
-		dbgp.logger.LogError("conn", "Error reading data: %s", err.Error())
+		if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
+			dbgp.logger.LogWarning("dbgp-server", "I/O timeout reading data: %s", err.Error())
+		} else {
+			dbgp.logger.LogError("dbgp-server", "Error reading data: %s", err.Error())
+		}
 		return nil, err
 	}
 

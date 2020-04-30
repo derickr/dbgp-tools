@@ -273,11 +273,11 @@ func runAsCloudClient(logger server.Logger) {
 	conn, err := connections.ConnectToCloud(CloudDomain, CloudPort, cloudUser, logger)
 
 	if err != nil {
-		fmt.Fprintf(output, "%s '%s': %s\n", BrightRed("Can not connect to Xdebug cloud at"), BrightYellow(CloudDomain), BrightRed(err))
+		fmt.Fprintf(output, "%s '%s': %s\n", BrightRed("Can not connect to Xdebug Cloud at"), BrightYellow(CloudDomain), BrightRed(err))
 		return
 	}
 	defer conn.Close()
-	defer fmt.Fprintf(output, "Disconnect\n")
+	defer fmt.Fprintf(output, "\n%s\n", BrightYellow(Bold("Shutting down client")))
 
 	protocol := protocol.NewDbgpClient(conn, false, logger)
 

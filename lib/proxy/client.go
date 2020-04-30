@@ -36,18 +36,18 @@ func connectToIDE(clientConnection *connections.Connection) (net.Conn, error) {
 }
 
 func (handler *ServerHandler) setupForwarder(conn net.Conn, initialPacket []byte, clientConnection *connections.Connection) error {
-	handler.logger.LogUserInfo("conn", clientConnection.GetKey(), "Connecting to %s", clientConnection.FullAddress())
+	handler.logger.LogUserInfo("proxy-client", clientConnection.GetKey(), "Connecting to %s", clientConnection.FullAddress())
 	client, err := connectToIDE(clientConnection)
 
 	if err != nil {
-		handler.logger.LogUserError("conn", clientConnection.GetKey(), "IDE not connected: %s", err)
+		handler.logger.LogUserError("proxy-client", clientConnection.GetKey(), "IDE not connected: %s", err)
 		return err
 	}
 
 	defer func(closer io.Closer) {
 		err := closer.Close()
 		if err != nil {
-			handler.logger.LogUserError("conn", clientConnection.GetKey(), "Closer didn't work: %v", err)
+			handler.logger.LogUserError("proxy-client", clientConnection.GetKey(), "Closer didn't work: %v", err)
 		}
 	}(client)
 
@@ -55,14 +55,14 @@ func (handler *ServerHandler) setupForwarder(conn net.Conn, initialPacket []byte
 		return err
 	}
 
-	handler.logger.LogUserInfo("conn", clientConnection.GetKey(), "IDE connected")
+	handler.logger.LogUserInfo("proxy-client", clientConnection.GetKey(), "IDE connected")
 	reassembledPacket := fmt.Sprintf("%d\000%s", len(initialPacket)-1, initialPacket)
 	_, err = client.Write([]byte(reassembledPacket))
 	if err != nil {
 		return err
 	}
 
-	handler.logger.LogUserInfo("conn", clientConnection.GetKey(), "Init forwarded, start pipe")
+	handler.logger.LogUserInfo("proxy-client", clientConnection.GetKey(), "Init forwarded, start pipe")
 	clientChan := make(chan error)
 	serverChan := make(chan error)
 
@@ -91,10 +91,10 @@ func (handler *ServerHandler) setupForwarder(conn net.Conn, initialPacket []byte
 	for {
 		select {
 		case err = <-serverChan:
-			handler.logger.LogUserInfo("conn", clientConnection.GetKey(), "IDE closed connection")
+			handler.logger.LogUserInfo("proxy-client", clientConnection.GetKey(), "IDE closed connection")
 			return nil
 		case err = <-clientChan:
-			handler.logger.LogUserInfo("conn", clientConnection.GetKey(), "Xdebug connection closed")
+			handler.logger.LogUserInfo("proxy-client", clientConnection.GetKey(), "Xdebug connection closed")
 			return nil
 		default:
 			time.Sleep(sleepTimeout)
@@ -115,7 +115,7 @@ func (handler *ServerHandler) Handle(conn net.Conn) error {
 	client, ok := handler.connectionList.FindByKey(init.IDEKey)
 
 	if ok {
-		handler.logger.LogUserInfo("conn", init.IDEKey, "Found connection for IDE Key '%s': %s", init.IDEKey, client.FullAddress())
+		handler.logger.LogUserInfo("proxy-client", init.IDEKey, "Found connection for IDE Key '%s': %s", init.IDEKey, client.FullAddress())
 		handler.setupForwarder(conn, []byte(response), client)
 	} else {
 		return fmt.Errorf("Could not find connection for IDE Key '%s'", init.IDEKey)

@@ -34,13 +34,13 @@ func (piCommand *ProxyInitCommand) Handle() (string, error) {
 
 	if err == nil {
 		if piCommand.ssl {
-			piCommand.logger.LogUserInfo("conn", piCommand.ideKey, "Added SSL connection for IDE Key '%s': %s:%d", piCommand.ideKey, piCommand.ipAddress, piCommand.port)
+			piCommand.logger.LogUserInfo("proxyinit", piCommand.ideKey, "Added SSL connection for IDE Key '%s': %s:%d", piCommand.ideKey, piCommand.ipAddress, piCommand.port)
 		} else {
-			piCommand.logger.LogUserInfo("conn", piCommand.ideKey, "Added connection for IDE Key '%s': %s:%d", piCommand.ideKey, piCommand.ipAddress, piCommand.port)
+			piCommand.logger.LogUserInfo("proxyinit", piCommand.ideKey, "Added connection for IDE Key '%s': %s:%d", piCommand.ideKey, piCommand.ipAddress, piCommand.port)
 		}
 		init = dbgpXml.NewProxyInit(true, piCommand.ideKey, piCommand.ipAddress, piCommand.port, piCommand.ssl, nil)
 	} else {
-		piCommand.logger.LogUserWarning("conn", piCommand.ideKey, "Could not add connection: %s", err.Error())
+		piCommand.logger.LogUserWarning("proxyinit", piCommand.ideKey, "Could not add connection: %s", err.Error())
 		init = dbgpXml.NewProxyInit(false, piCommand.ideKey, piCommand.ipAddress, piCommand.port, piCommand.ssl, &dbgpXml.ProxyInitError{ID: "ERR-01", Message: err.Error()})
 	}
 

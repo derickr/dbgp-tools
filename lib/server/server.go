@@ -113,20 +113,20 @@ func (server *Server) handleConnection(conn net.Conn, handler Handler) {
 	server.group.Add(1)
 	defer server.group.Done()
 
-	server.logger.LogInfo("conn", "Start new %s connection from %s", server.serverType, conn.RemoteAddr())
+	server.logger.LogInfo("server", "Start new %s connection from %s", server.serverType, conn.RemoteAddr())
 	err := handler.Handle(conn)
 
 	if err != nil {
-		server.logger.LogWarning("conn", "Handler response error: %s", err)
+		server.logger.LogWarning("server", "Handler response error: %s", err)
 	}
 
-	server.logger.LogInfo("conn", "Closing %s connection from %s", server.serverType, conn.RemoteAddr())
+	server.logger.LogInfo("server", "Closing %s connection from %s", server.serverType, conn.RemoteAddr())
 }
 
 func (server *Server) closeConnection(closer io.Closer) {
 	err := closer.Close()
 	if err != nil {
-		server.logger.LogWarning("conn", "Couldn't close connection: %s", err)
+		server.logger.LogWarning("server", "Couldn't close connection: %s", err)
 	}
 }
 

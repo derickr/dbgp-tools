@@ -119,7 +119,7 @@ func main() {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt)
 
-	logger.LogWarning("server", "Signal received: %s", <-signals)
+	logger.LogWarning("dbgpProxy", "Signal received: %s", <-signals)
 
 	clientServer.Stop()
 	clientSSLServer.Stop()
@@ -131,7 +131,7 @@ func main() {
 
 	syncGroup.Wait()
 
-	logger.LogInfo("server", "Proxy stopped")
+	logger.LogInfo("dbgpProxy", "Proxy stopped")
 }
 
 func resolveTCP(host string) *net.TCPAddr {
