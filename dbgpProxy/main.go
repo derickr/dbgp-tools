@@ -4,13 +4,16 @@ import (
 	"fmt"
 	"github.com/bitbored/go-ansicon" // BSD-3
 	"github.com/derickr/dbgp-tools/lib/connections"
+	"github.com/derickr/dbgp-tools/lib/protocol"
 	"github.com/derickr/dbgp-tools/lib/proxy"
 	"github.com/derickr/dbgp-tools/lib/server"
 	"github.com/pborman/getopt/v2" // BSD-3
 	"net"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
+	// "time"
 )
 
 var clientVersion = "0.2"
@@ -87,7 +90,34 @@ func handleConnection(c net.Conn, logger server.Logger) error {
 	return nil
 }
 
+func runAsCloudClient(logger server.Logger) error {
+	conn, err := connections.ConnectToCloud(CloudDomain, CloudPort, cloudUser, logger)
+
+	if err != nil {
+		logger.LogUserError("dbgpProxy", cloudUser, "Can not connect to Xdebug Cloud: %s", err)
+		return err
+	}
+	defer conn.Close()
+	defer logger.LogUserInfo("dbgpProxy", cloudUser, "Disconnect")
+
+	protocol := protocol.NewDbgpClient(conn, false, logger)
+
+	command := "cloudinit -u " + cloudUser
+	protocol.SendCommand(command)
+
+	err = handleConnection(conn, logger)
+	if err != nil {
+		logger.LogUserError("dbgpProxy", cloudUser, "%s", err.Error())
+		return err
+	}
+
+	logger.LogUserInfo("dbgpProxy", cloudUser, "Waiting for incoming connection")
+
+	return nil
+}
+
 func main() {
+	var err error
 	var serverServer *server.Server
 	var serverSSLServer *server.Server
 
@@ -100,21 +130,26 @@ func main() {
 
 	syncGroup := &sync.WaitGroup{}
 
+	if cloudUser != "" {
+		err = runAsCloudClient(logger)
+	} else {
+		serverServer = server.NewServer("server", resolveTCP(serverAddress), syncGroup, logger)
+		serverSSLServer = server.NewServer("server-ssl", resolveTCP(serverSSLAddress), syncGroup, logger)
+		go serverServer.Listen(proxy.NewServerHandler(ideConnectionList, logger))
+		go serverSSLServer.ListenSSL(proxy.NewServerHandler(ideConnectionList, logger))
+	}
+
+	if err != nil {
+		logger.LogError("dbgpProxy", "Proxy could not be started: %s", err)
+		return
+	}
+
 	clientServer := server.NewServer("client", resolveTCP(clientAddress), syncGroup, logger)
 	clientSSLServer := server.NewServer("client-ssl", resolveTCP(clientSSLAddress), syncGroup, logger)
 	go clientServer.Listen(proxy.NewClientHandler(ideConnectionList, logger))
 	go clientSSLServer.ListenSSL(proxy.NewClientHandler(ideConnectionList, logger))
 
-	if cloudUser == "" {
-		serverServer = server.NewServer("server", resolveTCP(serverAddress), syncGroup, logger)
-		serverSSLServer = server.NewServer("server-ssl", resolveTCP(serverSSLAddress), syncGroup, logger)
-		go serverServer.Listen(proxy.NewServerHandler(ideConnectionList, logger))
-		go serverSSLServer.ListenSSL(proxy.NewServerHandler(ideConnectionList, logger))
-	} else {
-		connections.ConnectToCloud(CloudDomain, CloudPort, cloudUser, logger)
-	}
-
-	logger.LogInfo("server", "Proxy started")
+	logger.LogInfo("dbgpProxy", "Proxy started")
 
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt)
