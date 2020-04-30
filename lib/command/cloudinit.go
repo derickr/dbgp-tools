@@ -28,7 +28,7 @@ func (ciCommand *CloudInitCommand) GetKey() string {
 	return ciCommand.userId
 }
 
-func (ciCommand *CloudInitCommand) AddConnection() error {
+func (ciCommand *CloudInitCommand) ActUponConnection() error {
 	conn := connections.NewConnection(ciCommand.userId, "", "", true, ciCommand.connection)
 	err := ciCommand.connectionList.Add(conn)
 
@@ -68,7 +68,7 @@ func (ciCommand *CloudInitCommand) Handle() (string, error) {
 }
 
 /* cloudinit -u <userid> */
-func CreateCloudInit(connectionsList *connections.ConnectionList, connection *net.Conn, arguments []string, logger server.Logger) (DbgpCloudInitCommand, error) {
+func CreateCloudInit(connectionsList *connections.ConnectionList, connection *net.Conn, arguments []string, logger server.Logger) (DbgpCloudCommand, error) {
 	ciCommand := NewCloudInitCommand(connectionsList, connection, logger)
 
 	expectValue := false

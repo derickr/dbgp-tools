@@ -47,12 +47,14 @@ func (dbgp *DbgpServer) parseLine(data string) (command.DbgpCommand, error) {
 	return nil, fmt.Errorf("Don't understand command '%s'", parts)
 }
 
-func (dbgp *DbgpServer) parseCloudInitLine(data string) (command.DbgpCloudInitCommand, error) {
+func (dbgp *DbgpServer) parseCloudLine(data string) (command.DbgpCloudCommand, error) {
 	parts := strings.Split(data, " ")
 
 	switch parts[0] {
 	case "cloudinit":
 		return command.CreateCloudInit(dbgp.connectionList, &dbgp.connection, parts[1:], dbgp.logger)
+	case "cloudstop":
+		return command.CreateCloudStop(dbgp.connectionList, &dbgp.connection, parts[1:], dbgp.logger)
 	}
 
 	return nil, fmt.Errorf("Don't understand command '%s'", parts)
@@ -74,7 +76,7 @@ func (dbgp *DbgpServer) ReadCommand() (command.DbgpCommand, error) {
 	return dbgp.parseLine(strings.TrimRight(string(data), "\000"))
 }
 
-func (dbgp *DbgpServer) ReadCloudInitCommand() (command.DbgpCloudInitCommand, error) {
+func (dbgp *DbgpServer) ReadCloudCommand() (command.DbgpCloudCommand, error) {
 	/* Read data */
 	data, err := dbgp.reader.ReadBytes('\000')
 
@@ -87,7 +89,7 @@ func (dbgp *DbgpServer) ReadCloudInitCommand() (command.DbgpCloudInitCommand, er
 		return nil, err
 	}
 
-	return dbgp.parseCloudInitLine(strings.TrimRight(string(data), "\000"))
+	return dbgp.parseCloudLine(strings.TrimRight(string(data), "\000"))
 }
 
 func (dbgp *DbgpServer) SendResponse(xml string) error {

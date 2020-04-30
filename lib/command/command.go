@@ -5,11 +5,11 @@ type DbgpCommand interface {
 	GetName() string
 }
 
-type DbgpCloudInitCommand interface {
+type DbgpCloudCommand interface {
 	Handle() (string, error)
 	GetKey() string
 	GetName() string
-	AddConnection() error
+	ActUponConnection() error
 	Close()
 }
 

@@ -150,6 +150,23 @@ func (dbgp *dbgpClient) parseCloudInitXML(rawXmlData string) (dbgpXml.CloudInit,
 	return init, nil
 }
 
+func (dbgp *dbgpClient) parseCloudStopXML(rawXmlData string) (dbgpXml.CloudStop, error) {
+	init := dbgpXml.CloudStop{}
+
+	reader := strings.NewReader(rawXmlData)
+
+	decoder := xml.NewDecoder(reader)
+	decoder.CharsetReader = charset.NewReaderLabel
+
+	err := decoder.Decode(&init)
+
+	if err != nil {
+		return init, err
+	}
+
+	return init, nil
+}
+
 func (dbgp *dbgpClient) parseNotifyXML(rawXmlData string) (dbgpXml.Notify, error) {
 	notify := dbgpXml.Notify{}
 
@@ -346,6 +363,12 @@ func (dbgp *dbgpClient) FormatXML(rawXmlData string) Response {
 	}
 
 	response, err = dbgp.parseCloudInitXML(rawXmlData)
+
+	if err == nil {
+		return response
+	}
+
+	response, err = dbgp.parseCloudStopXML(rawXmlData)
 
 	if err == nil {
 		return response

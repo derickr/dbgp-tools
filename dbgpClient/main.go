@@ -13,8 +13,6 @@ import (
 	"net"
 	"os"
 	"os/signal"
-	"os/user"
-	"strconv"
 	"strings"
 )
 
@@ -61,15 +59,13 @@ func isValidXml(xml string) bool {
 	return strings.HasPrefix(xml, "<?xml")
 }
 
-func handleConnection(c net.Conn, rl *readline.Instance) error {
+func handleConnection(c net.Conn, rl *readline.Instance) (bool, error) {
 	var lastCommand string
 
 	reader := protocol.NewDbgpClient(c, smartClient, logger)
 
-	if smartClient {
-		setupSignalHandler(reader)
-		defer signal.Reset()
-	}
+	setupSignalHandler(reader)
+	defer signal.Reset()
 
 	for {
 		var formattedResponse protocol.Response
@@ -78,7 +74,7 @@ func handleConnection(c net.Conn, rl *readline.Instance) error {
 
 		if timedOut {
 			if reader.HasAbortBeenSignalled() {
-				return nil
+				return true, nil
 			}
 			if reader.HasCommandsToRun() {
 				err = nil // set err to nil, so it resets the timeout
@@ -88,34 +84,34 @@ func handleConnection(c net.Conn, rl *readline.Instance) error {
 		}
 
 		if err != nil { // reading failed
-			return err
-		}
-
-		if !isValidXml(response) {
-			return fmt.Errorf("The received XML is not valid, closing connection: %s", response)
+			return false, err
 		}
 
 		if showXML {
 			fmt.Fprintf(output, "%s\n", Faint(response))
 		}
 
+		if !isValidXml(response) {
+			return false, fmt.Errorf("The received XML is not valid, closing connection: %s", response)
+		}
+
 		formattedResponse = reader.FormatXML(response)
 
 		if formattedResponse == nil {
-			return fmt.Errorf("Could not interpret XML, closing connection.")
+			return false, fmt.Errorf("Could not interpret XML, closing connection.")
 		}
 		fmt.Fprintln(output, formattedResponse)
 
 		if formattedResponse.ExpectMoreResponses() {
 			if !formattedResponse.IsSuccess() {
-				return fmt.Errorf("Another response expected, but it wasn't a successful response")
+				return false, fmt.Errorf("Another response expected, but it wasn't a successful response")
 			}
 			continue
 		}
 
 		if formattedResponse.ShouldCloseConnection() {
 			fmt.Fprintf(output, "%s\n", BrightRed("The connection should be closed."))
-			return nil
+			return false, nil
 		}
 
 	ReadInput:
@@ -126,7 +122,7 @@ func handleConnection(c net.Conn, rl *readline.Instance) error {
 		}
 
 		if err != nil { // io.EOF
-			return err
+			return false, err
 		}
 
 		if line == "help" {
@@ -140,17 +136,18 @@ func handleConnection(c net.Conn, rl *readline.Instance) error {
 
 		err = reader.SendCommand(line)
 		if err != nil {
-			return err
+			return false, err
 		}
 
 		lastCommand = line
 	}
 
-	return nil
+	return false, nil
 }
 
 var (
 	cloudUser   = ""
+	disCloudUser   = ""
 	CloudDomain = "cloud.xdebug.com"
 	CloudPort   = "9021"
 	help        = false
@@ -201,7 +198,7 @@ func handleArguments() {
 		os.Exit(0)
 	}
 
-	if cloudUser == "" {
+	if cloudUser == "" && disCloudUser == "" {
 		handleProxyArguments()
 	}
 	handleCloudArguments()
@@ -240,7 +237,7 @@ func doNormalConnectionLoop(l net.Listener, rl *readline.Instance) {
 
 	fmt.Fprintf(output, "Connect from %s\n", c.RemoteAddr().String())
 
-	err = handleConnection(c, rl)
+	_, err = handleConnection(c, rl)
 	if err != nil {
 		fmt.Fprintf(output, "%s: %s\n", BrightRed("Error while handling connection"), BrightRed(err.Error()))
 	}
@@ -288,14 +285,76 @@ func runAsCloudClient(logger server.Logger) {
 	protocol.SendCommand(command)
 
 	for {
-		err = handleConnection(conn, rl)
+		abortClient, err := handleConnection(conn, rl)
 		if err != nil {
-			fmt.Fprintf(output, "%s: %s\n", BrightRed("Error while handling connection"), BrightRed(err.Error()))
-			break
+			if err == readline.ErrInterrupt {
+				fmt.Fprintf(output, "%s: %s\n", BrightYellow("Interrupt, sending detach"), BrightRed(err.Error()))
+				command := "detach"
+				protocol.SendCommand(command)
+			} else {
+				fmt.Fprintf(output, "%s: %s\n", BrightRed("Error while handling connection"), BrightRed(err.Error()))
+				break
+			}
+		}
+
+		if abortClient {
+			command = "cloudstop -u " + cloudUser
+			protocol.SendCommand(command)
+			protocol.ReadResponse()
+			return
 		}
 
 		fmt.Fprintf(output, "\n%s\n", BrightGreen(Bold("Waiting for incoming connection...")))
 	}
+}
+
+func unregisterCloudClient(logger server.Logger) {
+	var formattedResponse protocol.Response
+
+	conn, err := connections.ConnectToCloud(CloudDomain, CloudPort, disCloudUser, logger)
+
+	if err != nil {
+		fmt.Fprintf(output, "%s '%s': %s\n", BrightRed("Can not connect to Xdebug cloud at"), BrightYellow(CloudDomain), BrightRed(err))
+		return
+	}
+	defer conn.Close()
+
+	reader := protocol.NewDbgpClient(conn, false, logger)
+
+	rl := initReadline()
+	defer rl.Close()
+
+	command := "cloudstop -u " + disCloudUser
+	reader.SendCommand(command)
+
+	response, err, timedOut := reader.ReadResponse()
+
+	if timedOut {
+		fmt.Fprintf(output, "Time out: %s", err);
+		return
+	}
+
+	if err != nil { // reading failed
+		fmt.Fprintf(output, "Reading failed: %s", err);
+		return
+	}
+
+	if showXML {
+		fmt.Fprintf(output, "%s\n", Faint(response))
+	}
+
+	if !isValidXml(response) {
+		fmt.Fprintf(output, "The received XML is not valid, closing connection: %s", response)
+		return
+	}
+
+	formattedResponse = reader.FormatXML(response)
+
+	if formattedResponse == nil {
+		fmt.Fprintf(output, "Could not interpret XML, closing connection")
+		return
+	}
+	fmt.Fprintln(output, formattedResponse)
 }
 
 func main() {
@@ -304,6 +363,12 @@ func main() {
 
 	logger := server.NewConsoleLogger(os.Stdout)
 
+	if disCloudUser != "" {
+		unregisterCloudClient(logger)
+		if cloudUser == "" {
+			return
+		}
+	}
 	if cloudUser != "" {
 		runAsCloudClient(logger)
 	} else {

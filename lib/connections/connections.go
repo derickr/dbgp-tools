@@ -7,11 +7,16 @@ import (
 )
 
 type ConnectionControl struct {
-	CloseConnection bool
+	CloseConnection     bool
+	TryReadForCloudStop bool
 }
 
 func NewCloseConnectionControl() *ConnectionControl {
 	return &ConnectionControl{CloseConnection: true}
+}
+
+func NewTryReadForCloudStopControl() *ConnectionControl {
+	return &ConnectionControl{TryReadForCloudStop: true}
 }
 
 type Connection struct {
