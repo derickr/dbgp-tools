@@ -308,15 +308,9 @@ func (dbgp *dbgpClient) processLine(line string) string {
 func (dbgp *dbgpClient) SendCommand(line string) error {
 	line = dbgp.processLine(line)
 
-	_, err := dbgp.writer.Write([]byte(line))
+	_, err := dbgp.writer.Write([]byte(line + "\000"))
 	if err != nil {
-		dbgp.logger.LogError("Error writing data: %s", err.Error())
-		return err
-	}
-
-	_, err = dbgp.writer.Write([]byte("\000"))
-	if err != nil {
-		dbgp.logger.LogError("Error writing data: %s", err.Error())
+		dbgp.logger.LogError("dbgp-client", "Error writing data '%s': %s", line, err.Error())
 		return err
 	}
 
