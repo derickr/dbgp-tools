@@ -15,7 +15,7 @@ type CloudInitError struct {
 }
 
 type CloudInitAccountInfo interface {
-	AsDbgpXmlType()	*AccountInfo
+	AsDbgpXmlType() *AccountInfo
 }
 
 type AccountInfo struct {

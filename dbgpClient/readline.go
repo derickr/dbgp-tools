@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/chzyer/readline"     // MIT
+	"github.com/chzyer/readline"      // MIT
 	. "github.com/logrusorgru/aurora" // WTFPL
 	"os/user"
 )
