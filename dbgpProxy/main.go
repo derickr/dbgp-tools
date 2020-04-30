@@ -54,8 +54,37 @@ func handleArguments() {
 	}
 }
 
-func formatError(connection connections.Connection) error {
-	return fmt.Errorf("IDE Key '%s' is already registered for connection %s", connection.GetKey(), connection.FullAddress())
+func isValidXml(xml string) bool {
+	return strings.HasPrefix(xml, "<?xml")
+}
+
+func handleConnection(c net.Conn, logger server.Logger) error {
+	reader := protocol.NewDbgpClient(c, false, logger)
+
+	response, err, timedOut := reader.ReadResponse()
+
+	if timedOut {
+		return nil
+	}
+
+	if err != nil { // reading failed
+		return err
+	}
+
+	if !isValidXml(response) {
+		return fmt.Errorf("The received XML is not valid, closing connection: %s", response)
+	}
+
+	formattedResponse := reader.FormatXML(response)
+	if formattedResponse.IsSuccess() == false {
+		return fmt.Errorf("%s", formattedResponse.GetErrorMessage())
+	}
+
+	if formattedResponse == nil {
+		return fmt.Errorf("Could not interpret XML, closing connection.")
+	}
+
+	return nil
 }
 
 func main() {
@@ -67,7 +96,7 @@ func main() {
 
 	logger := server.NewConsoleLogger(output)
 
-	ideConnectionList := connections.NewConnectionList(formatError)
+	ideConnectionList := connections.NewConnectionList()
 
 	syncGroup := &sync.WaitGroup{}
 

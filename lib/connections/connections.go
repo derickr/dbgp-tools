@@ -57,21 +57,20 @@ func (connection *Connection) GetConnection() net.Conn {
 type ConnectionList struct {
 	sync.Mutex
 	connections map[string]*Connection
-	formatError func(existing Connection) error
 }
 
-func NewConnectionList(formatError func(existing Connection) error) *ConnectionList {
-	return &ConnectionList{connections: map[string]*Connection{}, formatError: formatError}
+func NewConnectionList() *ConnectionList {
+	return &ConnectionList{connections: map[string]*Connection{}}
 }
 
 func (list *ConnectionList) Add(connection *Connection) error {
 	list.Lock()
 	defer list.Unlock()
 
-	existing, ok := list.connections[connection.ideKey]
+	_, ok := list.connections[connection.ideKey]
 
 	if ok {
-		return list.formatError(*existing)
+		return fmt.Errorf("A client for '%s' is already connected", connection.ideKey)
 	}
 
 	list.connections[connection.ideKey] = connection
@@ -86,7 +85,7 @@ func (list *ConnectionList) RemoveByKey(ideKey string) error {
 	_, ok := list.connections[ideKey]
 
 	if !ok {
-		return fmt.Errorf("IDE Key '%s' has not been previously registered", ideKey)
+		return fmt.Errorf("A client for '%s' has not been previously registered", ideKey)
 	}
 
 	delete(list.connections, ideKey)
