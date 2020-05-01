@@ -4,8 +4,8 @@ import (
 	"crypto/tls"
 	"fmt"
 	"github.com/derickr/dbgp-tools/lib/connections"
+	"github.com/derickr/dbgp-tools/lib/logger"
 	"github.com/derickr/dbgp-tools/lib/protocol"
-	"github.com/derickr/dbgp-tools/lib/server"
 	"io"
 	"net"
 	"time"
@@ -14,11 +14,11 @@ import (
 const sleepTimeout = time.Millisecond * 50
 
 type ServerHandler struct {
-	logger         server.Logger
+	logger         logger.Logger
 	connectionList *connections.ConnectionList
 }
 
-func NewServerHandler(connectionList *connections.ConnectionList, logger server.Logger) *ServerHandler {
+func NewServerHandler(connectionList *connections.ConnectionList, logger logger.Logger) *ServerHandler {
 	return &ServerHandler{connectionList: connectionList, logger: logger}
 }
 

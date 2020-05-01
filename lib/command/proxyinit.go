@@ -3,7 +3,7 @@ package command
 import (
 	"fmt"
 	"github.com/derickr/dbgp-tools/lib/connections"
-	"github.com/derickr/dbgp-tools/lib/server"
+	"github.com/derickr/dbgp-tools/lib/logger"
 	"github.com/derickr/dbgp-tools/lib/xml"
 	"strconv"
 )
@@ -12,13 +12,13 @@ type ProxyInitCommand struct {
 	connectionList    *connections.ConnectionList
 	ideKey            string
 	ipAddress         string
-	logger            server.Logger
+	logger            logger.Logger
 	port              int
 	multipleSupported bool
 	ssl               bool
 }
 
-func NewProxyInitCommand(ipAddress string, connectionList *connections.ConnectionList, logger server.Logger) *ProxyInitCommand {
+func NewProxyInitCommand(ipAddress string, connectionList *connections.ConnectionList, logger logger.Logger) *ProxyInitCommand {
 	return &ProxyInitCommand{connectionList: connectionList, ideKey: "", ipAddress: ipAddress, logger: logger, port: 9000, multipleSupported: false}
 }
 
@@ -48,7 +48,7 @@ func (piCommand *ProxyInitCommand) Handle() (string, error) {
 }
 
 /* proxyinit -p 9000 -k PHPSTORM -m 1 -s ? */
-func CreateProxyInit(ipAddress string, connectionList *connections.ConnectionList, arguments []string, logger server.Logger) (DbgpCommand, error) {
+func CreateProxyInit(ipAddress string, connectionList *connections.ConnectionList, arguments []string, logger logger.Logger) (DbgpCommand, error) {
 	piCommand := NewProxyInitCommand(ipAddress, connectionList, logger)
 
 	expectValue := false

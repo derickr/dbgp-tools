@@ -3,17 +3,17 @@ package proxy
 import (
 	"fmt"
 	"github.com/derickr/dbgp-tools/lib/connections"
+	"github.com/derickr/dbgp-tools/lib/logger"
 	"github.com/derickr/dbgp-tools/lib/protocol"
-	"github.com/derickr/dbgp-tools/lib/server"
 	"net"
 )
 
 type ClientHandler struct {
-	logger         server.Logger
+	logger         logger.Logger
 	connectionList *connections.ConnectionList
 }
 
-func NewClientHandler(connectionList *connections.ConnectionList, logger server.Logger) *ClientHandler {
+func NewClientHandler(connectionList *connections.ConnectionList, logger logger.Logger) *ClientHandler {
 	return &ClientHandler{connectionList: connectionList, logger: logger}
 }
 

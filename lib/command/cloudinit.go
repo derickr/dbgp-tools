@@ -3,7 +3,7 @@ package command
 import (
 	"fmt"
 	"github.com/derickr/dbgp-tools/lib/connections"
-	"github.com/derickr/dbgp-tools/lib/server"
+	"github.com/derickr/dbgp-tools/lib/logger"
 	"github.com/derickr/dbgp-tools/lib/xml"
 	"net"
 )
@@ -11,12 +11,12 @@ import (
 type CloudInitCommand struct {
 	connectionList *connections.ConnectionList
 	connection     *net.Conn
-	logger         server.Logger
+	logger         logger.Logger
 	userId         string
 	needsRemoving  bool
 }
 
-func NewCloudInitCommand(connectionList *connections.ConnectionList, connection *net.Conn, logger server.Logger) *CloudInitCommand {
+func NewCloudInitCommand(connectionList *connections.ConnectionList, connection *net.Conn, logger logger.Logger) *CloudInitCommand {
 	return &CloudInitCommand{connectionList: connectionList, connection: connection, logger: logger, userId: "", needsRemoving: true}
 }
 
@@ -68,7 +68,7 @@ func (ciCommand *CloudInitCommand) Handle() (string, error) {
 }
 
 /* cloudinit -u <userid> */
-func CreateCloudInit(connectionsList *connections.ConnectionList, connection *net.Conn, arguments []string, logger server.Logger) (DbgpCloudCommand, error) {
+func CreateCloudInit(connectionsList *connections.ConnectionList, connection *net.Conn, arguments []string, logger logger.Logger) (DbgpCloudCommand, error) {
 	ciCommand := NewCloudInitCommand(connectionsList, connection, logger)
 
 	expectValue := false

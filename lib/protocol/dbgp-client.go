@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"encoding/xml"
 	"fmt"
-	"github.com/derickr/dbgp-tools/lib/server"
+	"github.com/derickr/dbgp-tools/lib/logger"
 	"github.com/derickr/dbgp-tools/lib/xml"
 	"golang.org/x/net/html/charset"
 	"io"
@@ -24,7 +24,7 @@ type Response interface {
 
 type dbgpClient struct {
 	connection  net.Conn
-	logger      server.Logger
+	logger      logger.Logger
 	reader      *bufio.Reader
 	writer      io.Writer
 	counter     int
@@ -36,7 +36,7 @@ type dbgpClient struct {
 	commandsToRun    []string
 }
 
-func NewDbgpClient(c net.Conn, isSmart bool, logger server.Logger) *dbgpClient {
+func NewDbgpClient(c net.Conn, isSmart bool, logger logger.Logger) *dbgpClient {
 	var tmp dbgpClient
 
 	tmp.connection = c

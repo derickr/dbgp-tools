@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/bitbored/go-ansicon" // BSD-3
 	"github.com/derickr/dbgp-tools/lib/connections"
+	"github.com/derickr/dbgp-tools/lib/logger"
 	"github.com/derickr/dbgp-tools/lib/protocol"
 	"github.com/derickr/dbgp-tools/lib/proxy"
 	"github.com/derickr/dbgp-tools/lib/server"
@@ -61,7 +62,7 @@ func isValidXml(xml string) bool {
 	return strings.HasPrefix(xml, "<?xml")
 }
 
-func handleConnection(c net.Conn, logger server.Logger) error {
+func handleConnection(c net.Conn, logger logger.Logger) error {
 	reader := protocol.NewDbgpClient(c, false, logger)
 
 	response, err, timedOut := reader.ReadResponse()
@@ -90,7 +91,7 @@ func handleConnection(c net.Conn, logger server.Logger) error {
 	return nil
 }
 
-func runAsCloudClient(logger server.Logger) error {
+func runAsCloudClient(logger logger.Logger) error {
 	conn, err := connections.ConnectToCloud(CloudDomain, CloudPort, cloudUser, logger)
 
 	if err != nil {
@@ -124,7 +125,7 @@ func main() {
 	printStartUp()
 	handleArguments()
 
-	logger := server.NewConsoleLogger(output)
+	logger := logger.NewConsoleLogger(output)
 
 	ideConnectionList := connections.NewConnectionList()
 

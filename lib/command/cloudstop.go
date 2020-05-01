@@ -3,7 +3,7 @@ package command
 import (
 	"fmt"
 	"github.com/derickr/dbgp-tools/lib/connections"
-	"github.com/derickr/dbgp-tools/lib/server"
+	"github.com/derickr/dbgp-tools/lib/logger"
 	"github.com/derickr/dbgp-tools/lib/xml"
 	"net"
 )
@@ -11,12 +11,12 @@ import (
 type CloudStopCommand struct {
 	connectionList *connections.ConnectionList
 	connection     *net.Conn
-	logger         server.Logger
+	logger         logger.Logger
 	userId         string
 	needsRemoving  bool
 }
 
-func NewCloudStopCommand(connectionList *connections.ConnectionList, connection *net.Conn, logger server.Logger) *CloudStopCommand {
+func NewCloudStopCommand(connectionList *connections.ConnectionList, connection *net.Conn, logger logger.Logger) *CloudStopCommand {
 	return &CloudStopCommand{connectionList: connectionList, connection: connection, logger: logger, userId: "", needsRemoving: true}
 }
 
@@ -60,7 +60,7 @@ func (csCommand *CloudStopCommand) Handle() (string, error) {
 }
 
 /* cloudstop -u <userid> */
-func CreateCloudStop(connectionsList *connections.ConnectionList, connection *net.Conn, arguments []string, logger server.Logger) (DbgpCloudCommand, error) {
+func CreateCloudStop(connectionsList *connections.ConnectionList, connection *net.Conn, arguments []string, logger logger.Logger) (DbgpCloudCommand, error) {
 	csCommand := NewCloudStopCommand(connectionsList, connection, logger)
 
 	expectValue := false

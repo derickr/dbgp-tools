@@ -3,17 +3,17 @@ package command
 import (
 	"fmt"
 	"github.com/derickr/dbgp-tools/lib/connections"
-	"github.com/derickr/dbgp-tools/lib/server"
+	"github.com/derickr/dbgp-tools/lib/logger"
 	"github.com/derickr/dbgp-tools/lib/xml"
 )
 
 type ProxyStopCommand struct {
 	connectionList *connections.ConnectionList
 	ideKey         string
-	logger         server.Logger
+	logger         logger.Logger
 }
 
-func NewProxyStopCommand(connectionList *connections.ConnectionList, logger server.Logger) *ProxyStopCommand {
+func NewProxyStopCommand(connectionList *connections.ConnectionList, logger logger.Logger) *ProxyStopCommand {
 	return &ProxyStopCommand{connectionList: connectionList, ideKey: "", logger: logger}
 }
 
@@ -38,7 +38,7 @@ func (piCommand *ProxyStopCommand) Handle() (string, error) {
 }
 
 /* proxystop -k PHPSTORM */
-func CreateProxyStop(connectionList *connections.ConnectionList, arguments []string, logger server.Logger) (DbgpCommand, error) {
+func CreateProxyStop(connectionList *connections.ConnectionList, arguments []string, logger logger.Logger) (DbgpCommand, error) {
 	piCommand := NewProxyStopCommand(connectionList, logger)
 
 	expectValue := false

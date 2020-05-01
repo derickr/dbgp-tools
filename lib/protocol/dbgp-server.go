@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/derickr/dbgp-tools/lib/command"
 	"github.com/derickr/dbgp-tools/lib/connections"
-	"github.com/derickr/dbgp-tools/lib/server"
+	"github.com/derickr/dbgp-tools/lib/logger"
 	"io"
 	"net"
 	"strconv"
@@ -13,14 +13,14 @@ import (
 )
 
 type DbgpServer struct {
-	logger         server.Logger
+	logger         logger.Logger
 	connection     net.Conn
 	connectionList *connections.ConnectionList
 	reader         *bufio.Reader
 	writer         io.Writer
 }
 
-func NewDbgpServer(c net.Conn, connectionList *connections.ConnectionList, logger server.Logger) *DbgpServer {
+func NewDbgpServer(c net.Conn, connectionList *connections.ConnectionList, logger logger.Logger) *DbgpServer {
 	var tmp DbgpServer
 
 	tmp.connection = c

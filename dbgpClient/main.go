@@ -6,8 +6,8 @@ import (
 	"github.com/bitbored/go-ansicon" // BSD-3
 	"github.com/chzyer/readline"     // MIT
 	"github.com/derickr/dbgp-tools/lib/connections"
+	"github.com/derickr/dbgp-tools/lib/logger"
 	"github.com/derickr/dbgp-tools/lib/protocol"
-	"github.com/derickr/dbgp-tools/lib/server"
 	. "github.com/logrusorgru/aurora" // WTFPL
 	"github.com/pborman/getopt/v2"    // BSD-3
 	"net"
@@ -62,7 +62,7 @@ func isValidXml(xml string) bool {
 func handleConnection(c net.Conn, rl *readline.Instance) (bool, error) {
 	var lastCommand string
 
-	reader := protocol.NewDbgpClient(c, smartClient, logger)
+	reader := protocol.NewDbgpClient(c, smartClient, logOutput)
 
 	setupSignalHandler(reader)
 	defer signal.Reset()
@@ -163,7 +163,7 @@ var (
 	version     = false
 	unregister  = ""
 	output      = ansicon.Convert(os.Stdout)
-	logger      = server.NewConsoleLogger(output)
+	logOutput   = logger.NewConsoleLogger(output)
 )
 
 func printStartUp() {
@@ -266,7 +266,7 @@ func runAsNormalClient() {
 	}
 }
 
-func runAsCloudClient(logger server.Logger) {
+func runAsCloudClient(logger logger.Logger) {
 	conn, err := connections.ConnectToCloud(CloudDomain, CloudPort, cloudUser, logger)
 
 	if err != nil {
@@ -308,7 +308,7 @@ func runAsCloudClient(logger server.Logger) {
 	}
 }
 
-func unregisterCloudClient(logger server.Logger) {
+func unregisterCloudClient(logger logger.Logger) {
 	var formattedResponse protocol.Response
 
 	conn, err := connections.ConnectToCloud(CloudDomain, CloudPort, disCloudUser, logger)
@@ -361,7 +361,7 @@ func main() {
 	handleArguments()
 	printStartUp()
 
-	logger := server.NewConsoleLogger(os.Stdout)
+	logger := logger.NewConsoleLogger(os.Stdout)
 
 	if disCloudUser != "" {
 		unregisterCloudClient(logger)

@@ -3,6 +3,7 @@ package server
 import (
 	"crypto/tls"
 	"fmt"
+	"github.com/derickr/dbgp-tools/lib/logger"
 	"io"
 	"net"
 	"sync"
@@ -14,14 +15,14 @@ type Handler interface {
 }
 
 type Server struct {
-	logger     Logger
+	logger     logger.Logger
 	address    *net.TCPAddr
 	group      *sync.WaitGroup
 	stop       bool
 	serverType string
 }
 
-func NewServer(serverType string, address *net.TCPAddr, group *sync.WaitGroup, logger Logger) *Server {
+func NewServer(serverType string, address *net.TCPAddr, group *sync.WaitGroup, logger logger.Logger) *Server {
 	return &Server{
 		logger,
 		address,

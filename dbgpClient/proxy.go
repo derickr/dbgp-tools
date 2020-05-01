@@ -53,7 +53,7 @@ func registerWithProxy(address string, idekey string) error {
 		return err
 	}
 
-	protocol := protocol.NewDbgpClient(conn, false, logger)
+	protocol := protocol.NewDbgpClient(conn, false, logOutput)
 
 	command := "proxyinit -m 1 -k " + idekey + " -p " + strconv.Itoa(port)
 	if ssl {
@@ -88,7 +88,7 @@ func unregisterWithProxy(address string, idekey string) error {
 		return err
 	}
 
-	protocol := protocol.NewDbgpClient(conn, false, logger)
+	protocol := protocol.NewDbgpClient(conn, false, logOutput)
 
 	command := "proxystop -k " + idekey
 
