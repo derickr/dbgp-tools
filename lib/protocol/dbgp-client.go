@@ -234,9 +234,7 @@ func (dbgp *dbgpClient) parseStreamXML(rawXmlData string) (dbgpXml.Stream, error
 	return stream, nil
 }
 
-func (dbgp *dbgpClient) ReadResponse() (string, error, bool) {
-	dbgp.connection.SetReadDeadline(time.Now().Add(1 * time.Second))
-
+func (dbgp *dbgpClient) readResponse() (string, error, bool) {
 	/* Read length */
 	_, err := dbgp.reader.ReadBytes('\000')
 
@@ -256,6 +254,20 @@ func (dbgp *dbgpClient) ReadResponse() (string, error, bool) {
 	}
 
 	return string(data), nil, false
+}
+
+func (dbgp *dbgpClient) ReadResponse() (string, error) {
+	dbgp.connection.SetReadDeadline(time.Time{})
+
+	response, err, _ := dbgp.readResponse()
+
+	return response, err
+}
+
+func (dbgp *dbgpClient) ReadResponseWithTimeout(d time.Duration) (string, error, bool) {
+	dbgp.connection.SetReadDeadline(time.Now().Add(d))
+
+	return dbgp.readResponse()
 }
 
 func (dbgp *dbgpClient) injectIIfNeeded(parts []string) []string {

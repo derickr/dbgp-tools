@@ -61,11 +61,7 @@ func handleArguments() {
 func handleConnection(c net.Conn, logger logger.Logger) error {
 	reader := protocol.NewDbgpClient(c, false, logger)
 
-	response, err, timedOut := reader.ReadResponse()
-
-	if timedOut {
-		return nil
-	}
+	response, err := reader.ReadResponse()
 
 	if err != nil { // reading failed
 		return err

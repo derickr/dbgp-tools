@@ -105,7 +105,7 @@ func (handler *ServerHandler) setupForwarder(conn net.Conn, initialPacket []byte
 func (handler *ServerHandler) Handle(conn net.Conn) error {
 	reader := protocol.NewDbgpClient(conn, false, handler.logger)
 
-	response, err, _ := reader.ReadResponse()
+	response, err := reader.ReadResponse()
 	if err != nil {
 		return fmt.Errorf("Error reading response: %v", err)
 	}

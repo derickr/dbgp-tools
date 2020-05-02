@@ -62,7 +62,7 @@ func registerWithProxy(address string, idekey string) error {
 
 	protocol.SendCommand(command)
 
-	response, err, _ := protocol.ReadResponse()
+	response, err := protocol.ReadResponse()
 	if err != nil {
 		return fmt.Errorf("proxyinit failed: %s", err)
 	}
@@ -94,7 +94,7 @@ func unregisterWithProxy(address string, idekey string) error {
 
 	protocol.SendCommand(command)
 
-	response, err, _ := protocol.ReadResponse()
+	response, err := protocol.ReadResponse()
 	if err != nil {
 		return fmt.Errorf("proxystop failed: %s", err)
 	}

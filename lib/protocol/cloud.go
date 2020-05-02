@@ -25,12 +25,7 @@ func UnregisterCloudClient(cloudDomain string, cloudPort string, cloudUser strin
 	command := "cloudstop -u " + cloudUser
 	reader.SendCommand(command)
 
-	response, err, timedOut := reader.ReadResponse()
-
-	if timedOut {
-		fmt.Fprintf(output, "Time out: %s", err);
-		return
-	}
+	response, err := reader.ReadResponse()
 
 	if err != nil { // reading failed
 		fmt.Fprintf(output, "Reading failed: %s", err);

@@ -14,6 +14,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"time"
 )
 
 var clientVersion = "0.2"
@@ -66,7 +67,7 @@ func handleConnection(c net.Conn, rl *readline.Instance) (bool, error) {
 	for {
 		var formattedResponse protocol.Response
 
-		response, err, timedOut := reader.ReadResponse()
+		response, err, timedOut := reader.ReadResponseWithTimeout(time.Second)
 
 		if timedOut {
 			if reader.HasAbortBeenSignalled() {
