@@ -8,11 +8,11 @@ import (
 	"github.com/derickr/dbgp-tools/lib/protocol"
 	"github.com/derickr/dbgp-tools/lib/proxy"
 	"github.com/derickr/dbgp-tools/lib/server"
+	"github.com/derickr/dbgp-tools/lib/xml"
 	"github.com/pborman/getopt/v2" // BSD-3
 	"net"
 	"os"
 	"os/signal"
-	"strings"
 	"sync"
 	// "time"
 )
@@ -58,10 +58,6 @@ func handleArguments() {
 	}
 }
 
-func isValidXml(xml string) bool {
-	return strings.HasPrefix(xml, "<?xml")
-}
-
 func handleConnection(c net.Conn, logger logger.Logger) error {
 	reader := protocol.NewDbgpClient(c, false, logger)
 
@@ -75,7 +71,7 @@ func handleConnection(c net.Conn, logger logger.Logger) error {
 		return err
 	}
 
-	if !isValidXml(response) {
+	if !dbgpXml.IsValidXml(response) {
 		return fmt.Errorf("The received XML is not valid, closing connection: %s", response)
 	}
 

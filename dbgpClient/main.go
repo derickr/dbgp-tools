@@ -8,12 +8,12 @@ import (
 	"github.com/derickr/dbgp-tools/lib/connections"
 	"github.com/derickr/dbgp-tools/lib/logger"
 	"github.com/derickr/dbgp-tools/lib/protocol"
+	"github.com/derickr/dbgp-tools/lib/xml"
 	. "github.com/logrusorgru/aurora" // WTFPL
 	"github.com/pborman/getopt/v2"    // BSD-3
 	"net"
 	"os"
 	"os/signal"
-	"strings"
 )
 
 var clientVersion = "0.2"
@@ -55,10 +55,6 @@ func setupSignalHandler(protocol CommandRunner) {
 	}()
 }
 
-func isValidXml(xml string) bool {
-	return strings.HasPrefix(xml, "<?xml")
-}
-
 func handleConnection(c net.Conn, rl *readline.Instance) (bool, error) {
 	var lastCommand string
 
@@ -91,7 +87,7 @@ func handleConnection(c net.Conn, rl *readline.Instance) (bool, error) {
 			fmt.Fprintf(output, "%s\n", Faint(response))
 		}
 
-		if !isValidXml(response) {
+		if !dbgpXml.IsValidXml(response) {
 			return false, fmt.Errorf("The received XML is not valid, closing connection: %s", response)
 		}
 
