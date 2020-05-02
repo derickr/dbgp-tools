@@ -3,7 +3,10 @@ package server
 import (
 	"crypto/tls"
 	"fmt"
+	"github.com/derickr/dbgp-tools/lib/connections"
 	"github.com/derickr/dbgp-tools/lib/logger"
+	"github.com/derickr/dbgp-tools/lib/protocol"
+	"github.com/derickr/dbgp-tools/lib/xml"
 	"io"
 	"net"
 	"sync"
@@ -109,12 +112,59 @@ func (server *Server) ListenSSL(handler Handler) {
 	server.logger.LogInfo("server", "Shutdown %s SSL server", server.serverType)
 }
 
+func doCloudCommand(conn net.Conn, command string, logger logger.Logger) error {
+	reader := protocol.NewDbgpClient(conn, false, logger)
+	reader.SendCommand(command)
+
+	response, err := reader.ReadResponse()
+
+	if err != nil { // reading failed
+		return err
+	}
+
+	if !dbgpXml.IsValidXml(response) {
+		return fmt.Errorf("The received XML is not valid, closing connection: %s", response)
+	}
+
+	formattedResponse := reader.FormatXML(response)
+
+	if formattedResponse.IsSuccess() == false {
+		return fmt.Errorf("%s", formattedResponse.GetErrorMessage())
+	}
+
+	if formattedResponse == nil {
+		return fmt.Errorf("Could not interpret XML, closing connection.")
+	}
+
+	return nil
+}
+
+func (server *Server) CloudConnect(handler Handler, cloudUser string) {
+	connToCloud, err := connections.ConnectTo(server.address.String(), true)
+
+	if err != nil {
+		server.logger.LogError("server", "Can not connect to Xdebug Cloud: %s", err)
+		return
+	}
+
+	server.logger.LogInfo("server", "Connected to Xdebug Cloud on %s", server.address)
+
+	err = doCloudCommand(connToCloud, "cloudinit -u " + cloudUser, server.logger)
+	if err != nil {
+		server.logger.LogError("server", "Not connected to Xdebug Cloud: %s", err)
+		return
+	}
+
+	go server.handleConnection(connToCloud, handler)
+}
+
 func (server *Server) handleConnection(conn net.Conn, handler Handler) {
 	defer server.closeConnection(conn)
 	server.group.Add(1)
 	defer server.group.Done()
 
 	server.logger.LogInfo("server", "Start new %s connection from %s", server.serverType, conn.RemoteAddr())
+
 	err := handler.Handle(conn)
 
 	if err != nil {

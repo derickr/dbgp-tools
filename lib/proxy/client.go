@@ -103,22 +103,36 @@ func (handler *ServerHandler) setupForwarder(conn net.Conn, initialPacket []byte
 }
 
 func (handler *ServerHandler) Handle(conn net.Conn) error {
+	var key string
+	var connType string
+
 	reader := protocol.NewDbgpClient(conn, false, handler.logger)
 
 	response, err := reader.ReadResponse()
 	if err != nil {
-		return fmt.Errorf("Error reading response: %v", err)
+		return fmt.Errorf("X Error reading response: %v", err)
 	}
 
 	init, _ := reader.ParseInitXML(response)
 
-	client, ok := handler.connectionList.FindByKey(init.IDEKey)
+	switch {
+	case init.CloudUserID != "":
+		key = init.CloudUserID
+		connType = "Cloud User"
+	case init.IDEKey != "":
+		key = init.IDEKey
+		connType = "IDE Key"
+	default:
+		return fmt.Errorf("Both IDE Key and Cloud User are unset")
+	}
+
+	client, ok := handler.connectionList.FindByKey(key)
 
 	if ok {
-		handler.logger.LogUserInfo("proxy-client", init.IDEKey, "Found connection for IDE Key '%s': %s", init.IDEKey, client.FullAddress())
+		handler.logger.LogUserInfo("proxy-client", key, "Found connection for %s '%s': %s", connType, key, client.FullAddress())
 		handler.setupForwarder(conn, []byte(response), client)
 	} else {
-		return fmt.Errorf("Could not find connection for IDE Key '%s'", init.IDEKey)
+		return fmt.Errorf("Could not find connection for %s '%s'", connType, key)
 	}
 
 	return nil

@@ -21,6 +21,7 @@ var clientVersion = "0.2"
 
 var (
 	cloudUser        = ""
+	disCloudUser     = ""
 	CloudDomain      = "cloud.xdebug.com"
 	CloudPort        = "9021"
 	help             = false
@@ -111,6 +112,7 @@ func runAsCloudClient(logger logger.Logger) error {
 
 func main() {
 	var err error
+	var cloudClient *server.Server
 	var serverServer *server.Server
 	var serverSSLServer *server.Server
 
@@ -124,7 +126,15 @@ func main() {
 	syncGroup := &sync.WaitGroup{}
 
 	if cloudUser != "" {
-		err = runAsCloudClient(logger)
+		if disCloudUser != "" {
+			protocol.UnregisterCloudClient(CloudDomain, CloudPort, disCloudUser, output, logger)
+		}
+		cloudClient = server.NewServer(
+			"cloud-client-ssl",
+			resolveTCP(connections.CloudHostFromUserId(CloudDomain, CloudPort, cloudUser)),
+			syncGroup,
+			logger)
+		go cloudClient.CloudConnect(proxy.NewServerHandler(ideConnectionList, logger), cloudUser)
 	} else {
 		serverServer = server.NewServer("server", resolveTCP(serverAddress), syncGroup, logger)
 		serverSSLServer = server.NewServer("server-ssl", resolveTCP(serverSSLAddress), syncGroup, logger)
@@ -155,6 +165,8 @@ func main() {
 	if cloudUser == "" {
 		serverServer.Stop()
 		serverSSLServer.Stop()
+	} else {
+		cloudClient.Stop()
 	}
 
 	syncGroup.Wait()
