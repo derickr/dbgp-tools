@@ -304,55 +304,6 @@ func runAsCloudClient(logger logger.Logger) {
 	}
 }
 
-func unregisterCloudClient(logger logger.Logger) {
-	var formattedResponse protocol.Response
-
-	conn, err := connections.ConnectToCloud(CloudDomain, CloudPort, disCloudUser, logger)
-
-	if err != nil {
-		fmt.Fprintf(output, "%s '%s': %s\n", BrightRed("Can not connect to Xdebug cloud at"), BrightYellow(CloudDomain), BrightRed(err))
-		return
-	}
-	defer conn.Close()
-
-	reader := protocol.NewDbgpClient(conn, false, logger)
-
-	rl := initReadline()
-	defer rl.Close()
-
-	command := "cloudstop -u " + disCloudUser
-	reader.SendCommand(command)
-
-	response, err, timedOut := reader.ReadResponse()
-
-	if timedOut {
-		fmt.Fprintf(output, "Time out: %s", err);
-		return
-	}
-
-	if err != nil { // reading failed
-		fmt.Fprintf(output, "Reading failed: %s", err);
-		return
-	}
-
-	if showXML {
-		fmt.Fprintf(output, "%s\n", Faint(response))
-	}
-
-	if !isValidXml(response) {
-		fmt.Fprintf(output, "The received XML is not valid, closing connection: %s", response)
-		return
-	}
-
-	formattedResponse = reader.FormatXML(response)
-
-	if formattedResponse == nil {
-		fmt.Fprintf(output, "Could not interpret XML, closing connection")
-		return
-	}
-	fmt.Fprintln(output, formattedResponse)
-}
-
 func main() {
 	handleArguments()
 	printStartUp()
@@ -360,7 +311,7 @@ func main() {
 	logger := logger.NewConsoleLogger(os.Stdout)
 
 	if disCloudUser != "" {
-		unregisterCloudClient(logger)
+		protocol.UnregisterCloudClient(CloudDomain, CloudPort, disCloudUser, output, logger)
 		if cloudUser == "" {
 			return
 		}
