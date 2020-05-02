@@ -35,10 +35,16 @@ func ConnectTo(address string, ssl bool) (net.Conn, error) {
 	return conn, nil
 }
 
-func ConnectToCloud(domain string, port string, uid string, logger logger.Logger) (net.Conn, error) {
+func CloudHostFromUserId(domain string, port string, uid string) string {
 	crc32v := crc32.ChecksumIEEE([]byte(uid))
 
 	host := fmt.Sprintf("%c.%s:%s", (crc32v&0x0f)+'a'-1, domain, port)
+
+	return host
+}
+
+func ConnectToCloud(domain string, port string, uid string, logger logger.Logger) (net.Conn, error) {
+	host := CloudHostFromUserId(domain, port, uid)
 
 	logger.LogInfo("utils", "Connecting to cloud host '%s'", host)
 
