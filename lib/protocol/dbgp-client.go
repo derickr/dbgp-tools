@@ -382,3 +382,29 @@ func (dbgp *dbgpClient) FormatXML(rawXmlData string) Response {
 
 	return nil
 }
+
+func (dbgp *dbgpClient) RunCommand(command string) error {
+	dbgp.SendCommand(command)
+
+	response, err := dbgp.ReadResponse()
+
+	if err != nil { // reading failed
+		return err
+	}
+
+	if !dbgpXml.IsValidXml(response) {
+		return fmt.Errorf("The received XML is not valid, closing connection: %s", response)
+	}
+
+	formattedResponse := dbgp.FormatXML(response)
+
+	if formattedResponse.IsSuccess() == false {
+		return fmt.Errorf("%s", formattedResponse.GetErrorMessage())
+	}
+
+	if formattedResponse == nil {
+		return fmt.Errorf("Could not interpret XML, closing connection.")
+	}
+
+	return nil
+}
