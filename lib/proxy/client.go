@@ -8,6 +8,9 @@ import (
 	"github.com/derickr/dbgp-tools/lib/protocol"
 	"io"
 	"net"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
@@ -106,33 +109,50 @@ func (handler *ServerHandler) Handle(conn net.Conn) error {
 	var key string
 	var connType string
 
+	/* Set up interrupt handler */
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+
 	reader := protocol.NewDbgpClient(conn, false, handler.logger)
 
-	response, err := reader.ReadResponse()
-	if err != nil {
-		return fmt.Errorf("X Error reading response: %v", err)
-	}
+ConnectionsLoop:
+	for {
+		response, err, timeout := reader.ReadResponseWithTimeout(2 * time.Second)
 
-	init, _ := reader.ParseInitXML(response)
+		select {
+		case <-signals:
+			break ConnectionsLoop
+		default:
+			if timeout {
+				continue
+			}
+		}
 
-	switch {
-	case init.CloudUserID != "":
-		key = init.CloudUserID
-		connType = "Cloud User"
-	case init.IDEKey != "":
-		key = init.IDEKey
-		connType = "IDE Key"
-	default:
-		return fmt.Errorf("Both IDE Key and Cloud User are unset")
-	}
+		if err != nil {
+			return fmt.Errorf("Error reading response: %v", err)
+		}
 
-	client, ok := handler.connectionList.FindByKey(key)
+		init, _ := reader.ParseInitXML(response)
 
-	if ok {
-		handler.logger.LogUserInfo("proxy-client", key, "Found connection for %s '%s': %s", connType, key, client.FullAddress())
-		handler.setupForwarder(conn, []byte(response), client)
-	} else {
-		return fmt.Errorf("Could not find connection for %s '%s'", connType, key)
+		switch {
+		case init.CloudUserID != "":
+			key = init.CloudUserID
+			connType = "Cloud User"
+		case init.IDEKey != "":
+			key = init.IDEKey
+			connType = "IDE Key"
+		default:
+			return fmt.Errorf("Both IDE Key and Cloud User are unset")
+		}
+
+		client, ok := handler.connectionList.FindByKey(key)
+
+		if ok {
+			handler.logger.LogUserInfo("proxy-client", key, "Found connection for %s '%s': %s", connType, key, client.FullAddress())
+			handler.setupForwarder(conn, []byte(response), client)
+		} else {
+			handler.logger.LogUserInfo("proxy-client", key, "Could not find IDE connection for %s '%s': %s", connType, key, client.FullAddress())
+		}
 	}
 
 	return nil
