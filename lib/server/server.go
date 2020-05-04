@@ -115,15 +115,15 @@ func (server *Server) CloudConnect(handler Handler, cloudUser string) {
 	connToCloud, err := connections.ConnectTo(server.address.String(), true)
 
 	if err != nil {
-		server.logger.LogError("server", "Can not connect to Xdebug Cloud: %s", err)
+		server.logger.LogUserError("server", cloudUser, "Can not connect to Xdebug Cloud: %s", err)
 		return
 	}
 
-	server.logger.LogInfo("server", "Connected to Xdebug Cloud on %s", server.address)
+	server.logger.LogUserInfo("server", cloudUser, "Connected to Xdebug Cloud on %s", server.address)
 
 	err = protocol.NewDbgpClient(connToCloud, false, server.logger).RunCommand("cloudinit -u " + cloudUser)
 	if err != nil {
-		server.logger.LogError("server", "Not connected to Xdebug Cloud: %s", err)
+		server.logger.LogUserError("server", cloudUser, "Not connected to Xdebug Cloud: %s", err)
 		return
 	}
 
