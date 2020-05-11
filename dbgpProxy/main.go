@@ -84,32 +84,6 @@ func handleConnection(c net.Conn, logger logger.Logger) error {
 	return nil
 }
 
-func runAsCloudClient(logger logger.Logger) error {
-	conn, err := connections.ConnectToCloud(CloudDomain, CloudPort, cloudUser, logger)
-
-	if err != nil {
-		logger.LogUserError("dbgpProxy", cloudUser, "Can not connect to Xdebug Cloud: %s", err)
-		return err
-	}
-	defer conn.Close()
-	defer logger.LogUserInfo("dbgpProxy", cloudUser, "Disconnect")
-
-	protocol := protocol.NewDbgpClient(conn, false, logger)
-
-	command := "cloudinit -u " + cloudUser
-	protocol.SendCommand(command)
-
-	err = handleConnection(conn, logger)
-	if err != nil {
-		logger.LogUserError("dbgpProxy", cloudUser, "%s", err.Error())
-		return err
-	}
-
-	logger.LogUserInfo("dbgpProxy", cloudUser, "Waiting for incoming connection")
-
-	return nil
-}
-
 func main() {
 	var err error
 	var cloudClient *server.Server
