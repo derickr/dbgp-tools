@@ -226,7 +226,9 @@ func formatError(response Response) string {
 }
 
 func (response Response) IsSuccess() bool {
-	return !!(response.Success == 1)
+	return (
+		!!(response.Success == 1) ||
+		response.Command == "detach")
 }
 
 func (response Response) GetErrorMessage() string {

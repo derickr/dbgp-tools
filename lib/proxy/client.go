@@ -105,6 +105,14 @@ func (handler *ServerHandler) setupForwarder(conn net.Conn, initialPacket []byte
 	}
 }
 
+func (handler *ServerHandler) sendDetach(conn net.Conn) {
+	err := protocol.NewDbgpClient(conn, false, handler.logger).RunCommand("detach -- \"dbgpProxy has no IDE connected to it\"")
+	if err != nil {
+		handler.logger.LogError("proxy-client", "Could not send 'detach': %s", err)
+		return
+	}
+}
+
 func (handler *ServerHandler) Handle(conn net.Conn) error {
 	var key string
 	var connType string
@@ -151,7 +159,8 @@ ConnectionsLoop:
 			handler.logger.LogUserInfo("proxy-client", key, "Found connection for %s '%s': %s", connType, key, client.FullAddress())
 			handler.setupForwarder(conn, []byte(response), client)
 		} else {
-			handler.logger.LogUserInfo("proxy-client", key, "Could not find IDE connection for %s '%s': %s", connType, key, client.FullAddress())
+			handler.logger.LogUserInfo("proxy-client", key, "Could not find IDE connection for %s '%s'", connType, key)
+			handler.sendDetach(conn)
 		}
 	}
 
