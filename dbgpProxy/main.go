@@ -108,7 +108,7 @@ func main() {
 			resolveTCP(connections.CloudHostFromUserId(CloudDomain, CloudPort, cloudUser)),
 			syncGroup,
 			logger)
-		go cloudClient.CloudConnect(proxy.NewServerHandler(ideConnectionList, logger), cloudUser)
+		err = cloudClient.CloudConnect(proxy.NewServerHandler(ideConnectionList, logger), cloudUser)
 	} else {
 		serverServer = server.NewServer("server", resolveTCP(serverAddress), syncGroup, logger)
 		serverSSLServer = server.NewServer("server-ssl", resolveTCP(serverSSLAddress), syncGroup, logger)

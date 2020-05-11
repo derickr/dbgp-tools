@@ -111,12 +111,12 @@ func (server *Server) ListenSSL(handler Handler) {
 	server.logger.LogInfo("server", "Shutdown %s SSL server", server.serverType)
 }
 
-func (server *Server) CloudConnect(handler Handler, cloudUser string) {
+func (server *Server) CloudConnect(handler Handler, cloudUser string) error {
 	connToCloud, err := connections.ConnectTo(server.address.String(), true)
 
 	if err != nil {
 		server.logger.LogUserError("server", cloudUser, "Can not connect to Xdebug Cloud: %s", err)
-		return
+		return err
 	}
 
 	server.logger.LogUserInfo("server", cloudUser, "Connected to Xdebug Cloud on %s", server.address)
@@ -124,10 +124,12 @@ func (server *Server) CloudConnect(handler Handler, cloudUser string) {
 	err = protocol.NewDbgpClient(connToCloud, false, server.logger).RunCommand("cloudinit -u " + cloudUser)
 	if err != nil {
 		server.logger.LogUserError("server", cloudUser, "Not connected to Xdebug Cloud: %s", err)
-		return
+		return err
 	}
 
 	go server.handleConnection(connToCloud, handler)
+
+	return nil
 }
 
 func (server *Server) handleConnection(conn net.Conn, handler Handler) {
