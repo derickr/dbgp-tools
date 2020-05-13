@@ -98,6 +98,7 @@ func main() {
 	ideConnectionList := connections.NewConnectionList()
 
 	syncGroup := &sync.WaitGroup{}
+	signalShutdown := make(chan int, 1)
 
 	if cloudUser != "" {
 		if disCloudUser != "" {
@@ -108,7 +109,7 @@ func main() {
 			resolveTCP(connections.CloudHostFromUserId(CloudDomain, CloudPort, cloudUser)),
 			syncGroup,
 			logger)
-		err = cloudClient.CloudConnect(proxy.NewServerHandler(ideConnectionList, logger), cloudUser)
+		err = cloudClient.CloudConnect(proxy.NewServerHandler(ideConnectionList, logger), cloudUser, signalShutdown)
 	} else {
 		serverServer = server.NewServer("server", resolveTCP(serverAddress), syncGroup, logger)
 		serverSSLServer = server.NewServer("server-ssl", resolveTCP(serverSSLAddress), syncGroup, logger)
@@ -131,7 +132,12 @@ func main() {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt)
 
-	logger.LogWarning("dbgpProxy", "Signal received: %s", <-signals)
+	select {
+	case s := <-signals:
+		logger.LogWarning("dbgpProxy", "Signal received: %s", s)
+	case <-signalShutdown:
+		logger.LogWarning("dbgpProxy", "Shutdown requested")
+	}
 
 	clientServer.Stop()
 	clientSSLServer.Stop()

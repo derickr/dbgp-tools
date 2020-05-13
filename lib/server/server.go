@@ -63,7 +63,7 @@ func (server *Server) Listen(handler Handler) {
 		}
 		conn.SetKeepAlive(true)
 		conn.SetKeepAlivePeriod(time.Second)
-		go server.handleConnection(conn, handler)
+		go server.handleConnection(conn, handler, nil)
 	}
 
 	server.logger.LogInfo("server", "Shutdown %s server", server.serverType)
@@ -105,13 +105,13 @@ func (server *Server) ListenSSL(handler Handler) {
 		}
 		conn.SetKeepAlive(true)
 		conn.SetKeepAlivePeriod(time.Millisecond * 3)
-		go server.handleConnection(tls.Server(conn, &config), handler)
+		go server.handleConnection(tls.Server(conn, &config), handler, nil)
 	}
 
 	server.logger.LogInfo("server", "Shutdown %s SSL server", server.serverType)
 }
 
-func (server *Server) CloudConnect(handler Handler, cloudUser string) error {
+func (server *Server) CloudConnect(handler Handler, cloudUser string, shutdownSignal chan int) error {
 	connToCloud, err := connections.ConnectTo(server.address.String(), true)
 
 	if err != nil {
@@ -127,12 +127,12 @@ func (server *Server) CloudConnect(handler Handler, cloudUser string) error {
 		return err
 	}
 
-	go server.handleConnection(connToCloud, handler)
+	go server.handleConnection(connToCloud, handler, shutdownSignal)
 
 	return nil
 }
 
-func (server *Server) handleConnection(conn net.Conn, handler Handler) {
+func (server *Server) handleConnection(conn net.Conn, handler Handler, shutdownSignal chan int) {
 	defer server.closeConnection(conn)
 	server.group.Add(1)
 	defer server.group.Done()
@@ -143,6 +143,9 @@ func (server *Server) handleConnection(conn net.Conn, handler Handler) {
 
 	if err != nil {
 		server.logger.LogWarning("server", "Handler response error: %s", err)
+		if shutdownSignal != nil {
+			shutdownSignal <- 1
+		}
 	}
 
 	server.logger.LogInfo("server", "Closing %s connection from %s", server.serverType, conn.RemoteAddr())
