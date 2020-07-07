@@ -22,6 +22,7 @@ var clientVersion = "0.2"
 var (
 	cloudUser        = ""
 	disCloudUser     = ""
+	enableSSLServers = false
 	CloudDomain      = "cloud.xdebug.com"
 	CloudPort        = "9021"
 	help             = false
@@ -38,12 +39,26 @@ func printStartUp() {
 	fmt.Println("Copyright 2020 by Derick Rethans")
 }
 
+func checkEnableSSLServers(logger logger.Logger) {
+	if _, err := os.Stat("certs/fullchain.pem"); err != nil {
+		logger.LogWarning("SSL", "The 'certs/fullchain.pem' file could not be found, not enabling SSL listeners")
+		return
+	}
+	if _, err := os.Stat("certs/privkey.pem"); err != nil {
+		logger.LogWarning("SSL", "The 'certs/privkey.pem' file could not be found, not enabling SSL listeners")
+		return
+	}
+	enableSSLServers = true
+}
+
 func handleArguments() {
 	getopt.Flag(&help, 'h', "Show this help")
 	getopt.FlagLong(&clientAddress, "client", 'i', "Specify the host:port to listen on for IDE (client) connections", "host:port")
-	getopt.FlagLong(&clientSSLAddress, "client-ssl", 0, "Specify the host:port to listen on for IDE (client) SSL connections", "host:port")
 	getopt.FlagLong(&serverAddress, "server", 's', "Specify the host:port to listen on for debugger engine (server) connections", "host:port")
-	getopt.FlagLong(&serverSSLAddress, "server-ssl", 0, "Specify the host:port to listen on for debugger engine (server) SSL connections", "host:port")
+	if enableSSLServers {
+		getopt.FlagLong(&clientSSLAddress, "client-ssl", 0, "Specify the host:port to listen on for IDE (client) SSL connections", "host:port")
+		getopt.FlagLong(&serverSSLAddress, "server-ssl", 0, "Specify the host:port to listen on for debugger engine (server) SSL connections", "host:port")
+	}
 	getopt.Flag(&version, 'v', "Show version number and exit")
 
 	handleCloudFlags()
@@ -88,12 +103,14 @@ func main() {
 	var err error
 	var cloudClient *server.Server
 	var serverServer *server.Server
+	var clientSSLServer *server.Server
 	var serverSSLServer *server.Server
 
-	printStartUp()
-	handleArguments()
-
 	logger := logger.NewConsoleLogger(output)
+
+	printStartUp()
+	checkEnableSSLServers(logger)
+	handleArguments()
 
 	ideConnectionList := connections.NewConnectionList()
 
@@ -112,9 +129,12 @@ func main() {
 		err = cloudClient.CloudConnect(proxy.NewServerHandler(ideConnectionList, logger), cloudUser, signalShutdown)
 	} else {
 		serverServer = server.NewServer("server", resolveTCP(serverAddress), syncGroup, logger)
-		serverSSLServer = server.NewServer("server-ssl", resolveTCP(serverSSLAddress), syncGroup, logger)
 		go serverServer.Listen(proxy.NewServerHandler(ideConnectionList, logger))
-		go serverSSLServer.ListenSSL(proxy.NewServerHandler(ideConnectionList, logger))
+
+		if enableSSLServers {
+			serverSSLServer = server.NewServer("server-ssl", resolveTCP(serverSSLAddress), syncGroup, logger)
+			go serverSSLServer.ListenSSL(proxy.NewServerHandler(ideConnectionList, logger))
+		}
 	}
 
 	if err != nil {
@@ -123,9 +143,11 @@ func main() {
 	}
 
 	clientServer := server.NewServer("client", resolveTCP(clientAddress), syncGroup, logger)
-	clientSSLServer := server.NewServer("client-ssl", resolveTCP(clientSSLAddress), syncGroup, logger)
 	go clientServer.Listen(proxy.NewClientHandler(ideConnectionList, logger))
-	go clientSSLServer.ListenSSL(proxy.NewClientHandler(ideConnectionList, logger))
+	if enableSSLServers {
+		clientSSLServer = server.NewServer("client-ssl", resolveTCP(clientSSLAddress), syncGroup, logger)
+		go clientSSLServer.ListenSSL(proxy.NewClientHandler(ideConnectionList, logger))
+	}
 
 	logger.LogInfo("dbgpProxy", "Proxy started")
 
@@ -140,11 +162,15 @@ func main() {
 	}
 
 	clientServer.Stop()
-	clientSSLServer.Stop()
+	if enableSSLServers {
+		clientSSLServer.Stop()
+	}
 
 	if cloudUser == "" {
 		serverServer.Stop()
-		serverSSLServer.Stop()
+		if enableSSLServers {
+			serverSSLServer.Stop()
+		}
 	} else {
 		cloudClient.Stop()
 	}
