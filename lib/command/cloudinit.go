@@ -61,7 +61,7 @@ func (ciCommand *CloudInitCommand) Handle() (string, error) {
 	} else {
 		ciCommand.needsRemoving = false
 		ciCommand.logger.LogUserWarning("cloudinit", ciCommand.userId, "Could not add connection: %s", err.Error())
-		init = dbgpXml.NewCloudInit(false, ciCommand.userId, &dbgpXml.CloudInitError{ID: "ERR-01", Message: err.Error()}, false, nil)
+		init = dbgpXml.NewCloudInit(false, ciCommand.userId, &dbgpXml.CloudInitError{ID: "CLOUD-ERR-11", Message: err.Error()}, false, nil)
 	}
 
 	return init.AsXML()

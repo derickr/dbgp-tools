@@ -41,7 +41,7 @@ func (piCommand *ProxyInitCommand) Handle() (string, error) {
 		init = dbgpXml.NewProxyInit(true, piCommand.ideKey, piCommand.ipAddress, piCommand.port, piCommand.ssl, nil)
 	} else {
 		piCommand.logger.LogUserWarning("proxyinit", piCommand.ideKey, "Could not add connection: %s", err.Error())
-		init = dbgpXml.NewProxyInit(false, piCommand.ideKey, piCommand.ipAddress, piCommand.port, piCommand.ssl, &dbgpXml.ProxyInitError{ID: "ERR-01", Message: err.Error()})
+		init = dbgpXml.NewProxyInit(false, piCommand.ideKey, piCommand.ipAddress, piCommand.port, piCommand.ssl, &dbgpXml.ProxyInitError{ID: "PROXY-ERR-01", Message: err.Error()})
 	}
 
 	return init.AsXML()

@@ -114,10 +114,10 @@ func (list *ConnectionList) ClaimConnection(ideKey string) (*Connection, error) 
 	connection, ok := list.connections[ideKey]
 
 	if !ok {
-		return nil, fmt.Errorf("Can not find the connection with key '%s' to claim", ideKey)
+		return nil, fmt.Errorf("There is no IDE connected to Xdebug Cloud for UserID '%s'", ideKey)
 	}
 	if connection.claimed {
-		return nil, fmt.Errorf("The connection with key '%s' is already claimed", ideKey)
+		return nil, fmt.Errorf("A Xdebug connection for UserID '%s' is already active", ideKey)
 	}
 	connection.claimed = true
 

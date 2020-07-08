@@ -31,7 +31,7 @@ func (piCommand *ProxyStopCommand) Handle() (string, error) {
 		stop = dbgpXml.NewProxyStop(true, piCommand.ideKey, nil)
 	} else {
 		piCommand.logger.LogUserWarning("proxystop", piCommand.ideKey, "Could not remove connection: %s", err.Error())
-		stop = dbgpXml.NewProxyStop(false, piCommand.ideKey, &dbgpXml.ProxyInitError{ID: "ERR-02", Message: err.Error()})
+		stop = dbgpXml.NewProxyStop(false, piCommand.ideKey, &dbgpXml.ProxyInitError{ID: "PROXY-ERR-02", Message: err.Error()})
 	}
 
 	return stop.AsXML()

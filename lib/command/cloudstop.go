@@ -53,7 +53,7 @@ func (csCommand *CloudStopCommand) Handle() (string, error) {
 		stop = dbgpXml.NewCloudStop(true, csCommand.userId, nil)
 	} else {
 		csCommand.logger.LogUserWarning("cloudstop", csCommand.userId, "Could not remove connection: %s", err.Error())
-		stop = dbgpXml.NewCloudStop(false, csCommand.userId, &dbgpXml.CloudStopError{ID: "ERR-10", Message: err.Error()})
+		stop = dbgpXml.NewCloudStop(false, csCommand.userId, &dbgpXml.CloudStopError{ID: "CLOUD-ERR-10", Message: err.Error()})
 	}
 
 	return stop.AsXML()
