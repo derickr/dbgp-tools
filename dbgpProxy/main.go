@@ -17,7 +17,7 @@ import (
 	// "time"
 )
 
-var clientVersion = "0.2"
+var clientVersion = "0.3"
 
 var (
 	cloudUser        = ""
