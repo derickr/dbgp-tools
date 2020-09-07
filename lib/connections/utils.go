@@ -11,15 +11,17 @@ import (
 func ConnectTo(address string, ssl bool) (net.Conn, error) {
 	var conn net.Conn
 	var err error
-	var cert tls.Certificate
+	// var cert tls.Certificate
 
 	if ssl {
+		/*
 		cert, err = tls.LoadX509KeyPair("client-certs/client.pem", "client-certs/client.key")
 		if err != nil {
 			return nil, err
 		}
 		config := tls.Config{Certificates: []tls.Certificate{cert}, InsecureSkipVerify: true}
-		conn, err = tls.Dial("tcp", address, &config)
+		*/
+		conn, err = tls.Dial("tcp", address, nil)
 
 		if err != nil {
 			return nil, err
