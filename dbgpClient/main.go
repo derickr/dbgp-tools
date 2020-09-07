@@ -163,10 +163,12 @@ var (
 	logOutput   = logger.NewConsoleLogger(output)
 )
 
-func printStartUp() {
+func printVersion() {
 	fmt.Fprintf(output, "Xdebug Simple DBGp client (%s)\n", Bold(clientVersion))
 	fmt.Fprintf(output, "Copyright 2019-2020 by Derick Rethans\n")
+}
 
+func printStartUp() {
 	if !smartClient {
 		fmt.Fprintf(output, "In dumb client mode\n")
 	}
@@ -306,6 +308,7 @@ func runAsCloudClient(logger logger.Logger) {
 }
 
 func main() {
+	printVersion()
 	handleArguments()
 	printStartUp()
 
