@@ -40,7 +40,7 @@ func ConnectTo(address string, ssl bool) (net.Conn, error) {
 func CloudHostFromUserId(domain string, port string, uid string) string {
 	crc32v := crc32.ChecksumIEEE([]byte(uid))
 
-	host := fmt.Sprintf("%c.%s:%s", (crc32v&0x0f)+'a'-1, domain, port)
+	host := fmt.Sprintf("%c.%s:%s", (crc32v&0x0f)+'a', domain, port)
 
 	return host
 }
