@@ -17,7 +17,7 @@ import (
 	"time"
 )
 
-var clientVersion = "0.4.1"
+var clientVersion = "0.4.2"
 
 func displayHelp() {
 	fmt.Fprintf(output, `
@@ -149,13 +149,13 @@ var (
 	CloudPort   = "9021"
 	help        = false
 	once        = false
-	port        = 9000
+	port        = 9003
 	proxy       = "localhost:9001"
 	register    = ""
 	showXML     = false
 	smartClient = false
 	ssl         = false
-	sslPort     = 9010
+	sslPort     = 9013
 	sslProxy    = "localhost:9011"
 	version     = false
 	unregister  = ""
