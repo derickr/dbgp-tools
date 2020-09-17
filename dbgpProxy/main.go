@@ -17,7 +17,7 @@ import (
 	// "time"
 )
 
-var clientVersion = "0.3"
+var clientVersion = "0.4.2-dev"
 
 var (
 	cloudUser        = ""
@@ -28,8 +28,8 @@ var (
 	help             = false
 	clientAddress    = "localhost:9001"
 	clientSSLAddress = "localhost:9011"
-	serverAddress    = "localhost:9000"
-	serverSSLAddress = "localhost:9010"
+	serverAddress    = "localhost:9003"
+	serverSSLAddress = "localhost:9013"
 	output           = ansicon.Convert(os.Stdout)
 	version          = false
 )

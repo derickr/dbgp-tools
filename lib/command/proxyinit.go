@@ -19,7 +19,7 @@ type ProxyInitCommand struct {
 }
 
 func NewProxyInitCommand(ipAddress string, connectionList *connections.ConnectionList, logger logger.Logger) *ProxyInitCommand {
-	return &ProxyInitCommand{connectionList: connectionList, ideKey: "", ipAddress: ipAddress, logger: logger, port: 9000, multipleSupported: false}
+	return &ProxyInitCommand{connectionList: connectionList, ideKey: "", ipAddress: ipAddress, logger: logger, port: 9003, multipleSupported: false}
 }
 
 func (piCommand *ProxyInitCommand) GetName() string {
@@ -47,7 +47,7 @@ func (piCommand *ProxyInitCommand) Handle() (string, error) {
 	return init.AsXML()
 }
 
-/* proxyinit -p 9000 -k PHPSTORM -m 1 -s ? */
+/* proxyinit -p 9003 -k PHPSTORM -m 1 -s ? */
 func CreateProxyInit(ipAddress string, connectionList *connections.ConnectionList, arguments []string, logger logger.Logger) (DbgpCommand, error) {
 	piCommand := NewProxyInitCommand(ipAddress, connectionList, logger)
 
