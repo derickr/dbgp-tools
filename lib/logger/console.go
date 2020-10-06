@@ -17,9 +17,9 @@ func NewConsoleLogger(output io.Writer) *ConsoleLogger {
 
 func (logger *ConsoleLogger) logHandler(severity Value, category string, user string, format string, data []interface{}) {
 	if len(user) > 0 {
-		fmt.Fprintf(logger.output, "%s [%s] [%s] [%s] %s\n", time.Now().UTC().Format("15:04:05.000"), severity, White(category), Bold(White(user)), fmt.Sprintf(format, data...))
+		fmt.Fprintf(logger.output, "%s [%s] [%s] [%s] %s\n", time.Now().UTC().Format("2006-01-02 15:04:05.000"), severity, White(category), Bold(White(user)), fmt.Sprintf(format, data...))
 	} else {
-		fmt.Fprintf(logger.output, "%s [%s] [%s] %s\n", time.Now().UTC().Format("15:04:05.000"), severity, White(category), fmt.Sprintf(format, data...))
+		fmt.Fprintf(logger.output, "%s [%s] [%s] %s\n", time.Now().UTC().Format("2006-01-02 15:04:05.000"), severity, White(category), fmt.Sprintf(format, data...))
 	}
 }
 
