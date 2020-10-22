@@ -96,11 +96,13 @@ func (list *ConnectionList) RemoveByKey(ideKey string) error {
 	list.Lock()
 	defer list.Unlock()
 
-	_, ok := list.connections[ideKey]
+	connection, ok := list.connections[ideKey]
 
 	if !ok {
 		return fmt.Errorf("A client for '%s' has not been previously registered", ideKey)
 	}
+
+	connection.ControlRequests <- NewCloseConnectionControl()
 
 	delete(list.connections, ideKey)
 
