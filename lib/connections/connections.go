@@ -2,6 +2,7 @@ package connections
 
 import (
 	"fmt"
+	"github.com/google/uuid"
 	"net"
 	"sync"
 )
@@ -24,6 +25,7 @@ type Connection struct {
 	ipAddress       string
 	port            string
 	ssl             bool
+	sid             string
 	connection      *net.Conn
 	claimed         bool
 	DebugRequests   chan int
@@ -31,10 +33,13 @@ type Connection struct {
 }
 
 func NewConnection(ideKey string, ipAddress string, port string, ssl bool, connection *net.Conn) *Connection {
+	sid, _ := uuid.NewRandom()
+
 	return &Connection{
 		ideKey:          ideKey,
 		ipAddress:       ipAddress,
 		port:            port,
+		sid:             sid.String(),
 		ssl:             ssl,
 		connection:      connection,
 		claimed:         false,
@@ -53,6 +58,10 @@ func (connection *Connection) FullAddress() string {
 
 func (connection *Connection) GetKey() string {
 	return connection.ideKey
+}
+
+func (connection *Connection) GetSID() string {
+	return connection.sid
 }
 
 func (connection *Connection) GetConnection() net.Conn {
