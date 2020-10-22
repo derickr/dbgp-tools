@@ -22,7 +22,9 @@ type AccountInfo struct {
 	Name                 string `xml:"name,attr"`
 	Email                string `xml:"name,omit"`
 	Uid                  string `xml:"uid,attr"`
+	Active               bool   `xml:"active,attr"`
 	ConnectionsRemaining int    `xml:"remaining,attr"`
+	ConnectionsMade      int    `xml:"made,attr"`
 }
 
 type CloudInit struct {
@@ -98,13 +100,23 @@ func (init CloudInit) String() string {
 			Yellow(Bold("cloudinit")), Bold(Red("failure")), BrightRed(init.Error.Message))
 	} else {
 		connectionsLeft := "??"
+		connectionsMade := "??"
+		accountActive := BrightYellow("unknown");
 
 		if init.AccountInfo != nil {
 			connectionsLeft = strconv.Itoa(init.AccountInfo.ConnectionsRemaining)
+			connectionsMade = strconv.Itoa(init.AccountInfo.ConnectionsMade)
+			if (init.AccountInfo.Active) {
+				accountActive = BrightGreen(Bold("active"))
+			} else {
+				accountActive = BrightRed(Bold("not active"))
+			}
 		}
-		return fmt.Sprintf("%s | Connected as %s | %s connections remaining\n\n%s\n",
+		return fmt.Sprintf("%s | Connected as %s | %s | %s connections made | %s connections remaining\n\n%s\n",
 			Yellow(Bold("cloudinit")),
 			Bold(Yellow(init.UserID)),
+			accountActive,
+			BrightGreen(connectionsMade),
 			BrightGreen(connectionsLeft),
 			BrightGreen(Bold("Waiting for incoming connection...")))
 	}
