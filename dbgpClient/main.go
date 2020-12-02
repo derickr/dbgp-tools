@@ -275,13 +275,13 @@ func runAsCloudClient(logger logger.Logger) {
 	defer conn.Close()
 	defer fmt.Fprintf(output, "\n%s\n", BrightYellow(Bold("Shutting down client")))
 
-	protocol := protocol.NewDbgpClient(conn, false, logger)
+	proto := protocol.NewDbgpClient(conn, false, logger)
 
 	rl := initReadline()
 	defer rl.Close()
 
 	command := "cloudinit -u " + cloudUser
-	protocol.SendCommand(command)
+	proto.SendCommand(command)
 
 	for {
 		abortClient, err := handleConnection(conn, rl)
@@ -289,7 +289,7 @@ func runAsCloudClient(logger logger.Logger) {
 			if err == readline.ErrInterrupt {
 				fmt.Fprintf(output, "%s: %s\n", BrightYellow("Interrupt, sending detach"), BrightRed(err.Error()))
 				command := "detach"
-				protocol.SendCommand(command)
+				proto.SendCommand(command)
 			} else {
 				fmt.Fprintf(output, "%s: %s\n", BrightRed("Error while handling connection"), BrightRed(err.Error()))
 				break
@@ -298,8 +298,8 @@ func runAsCloudClient(logger logger.Logger) {
 
 		if abortClient {
 			command = "cloudstop -u " + cloudUser
-			protocol.SendCommand(command)
-			protocol.ReadResponse()
+			proto.SendCommand(command)
+			proto.ReadResponse()
 			return
 		}
 
@@ -312,16 +312,16 @@ func main() {
 	handleArguments()
 	printStartUp()
 
-	logger := logger.NewConsoleLogger(os.Stdout)
+	log := logger.NewConsoleLogger(os.Stdout)
 
 	if disCloudUser != "" {
-		protocol.UnregisterCloudClient(CloudDomain, CloudPort, disCloudUser, output, logger)
+		protocol.UnregisterCloudClient(CloudDomain, CloudPort, disCloudUser, output, log)
 		if cloudUser == "" {
 			return
 		}
 	}
 	if cloudUser != "" {
-		runAsCloudClient(logger)
+		runAsCloudClient(log)
 	} else {
 		runAsNormalClient()
 	}

@@ -53,16 +53,16 @@ func registerWithProxy(address string, idekey string) error {
 		return err
 	}
 
-	protocol := protocol.NewDbgpClient(conn, false, logOutput)
+	proto := protocol.NewDbgpClient(conn, false, logOutput)
 
 	command := "proxyinit -m 1 -k " + idekey + " -p " + strconv.Itoa(port)
 	if ssl {
 		command = command + " -s 1"
 	}
 
-	protocol.SendCommand(command)
+	proto.SendCommand(command)
 
-	response, err := protocol.ReadResponse()
+	response, err := proto.ReadResponse()
 	if err != nil {
 		return fmt.Errorf("proxyinit failed: %s", err)
 	}
@@ -71,7 +71,7 @@ func registerWithProxy(address string, idekey string) error {
 		fmt.Fprintf(output, "%s\n", Faint(response))
 	}
 
-	formatted := protocol.FormatXML(response)
+	formatted := proto.FormatXML(response)
 
 	fmt.Fprintln(output, formatted)
 
@@ -88,13 +88,13 @@ func unregisterWithProxy(address string, idekey string) error {
 		return err
 	}
 
-	protocol := protocol.NewDbgpClient(conn, false, logOutput)
+	proto := protocol.NewDbgpClient(conn, false, logOutput)
 
 	command := "proxystop -k " + idekey
 
-	protocol.SendCommand(command)
+	proto.SendCommand(command)
 
-	response, err := protocol.ReadResponse()
+	response, err := proto.ReadResponse()
 	if err != nil {
 		return fmt.Errorf("proxystop failed: %s", err)
 	}
@@ -103,7 +103,7 @@ func unregisterWithProxy(address string, idekey string) error {
 		fmt.Fprintf(output, "%s\n", Faint(response))
 	}
 
-	formatted := protocol.FormatXML(response)
+	formatted := proto.FormatXML(response)
 	fmt.Fprintln(output, formatted)
 
 	if !formatted.IsSuccess() {
