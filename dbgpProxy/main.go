@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"github.com/bitbored/go-ansicon" // BSD-3
 	"github.com/derickr/dbgp-tools/lib/connections"
+	"github.com/derickr/dbgp-tools/lib/dbgpxml"
 	"github.com/derickr/dbgp-tools/lib/logger"
 	"github.com/derickr/dbgp-tools/lib/protocol"
 	"github.com/derickr/dbgp-tools/lib/proxy"
 	"github.com/derickr/dbgp-tools/lib/server"
-	"github.com/derickr/dbgp-tools/lib/xml"
 	"github.com/pborman/getopt/v2" // BSD-3
 	"net"
 	"os"
@@ -83,7 +83,7 @@ func handleConnection(c net.Conn, logger logger.Logger) error {
 		return err
 	}
 
-	if !dbgpXml.IsValidXml(response) {
+	if !dbgpxml.IsValidXml(response) {
 		return fmt.Errorf("The received XML is not valid, closing connection: %s", response)
 	}
 

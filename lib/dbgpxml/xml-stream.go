@@ -1,4 +1,4 @@
-package dbgpXml
+package dbgpxml
 
 import (
 	"encoding/base64"

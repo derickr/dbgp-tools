@@ -3,8 +3,8 @@ package command
 import (
 	"fmt"
 	"github.com/derickr/dbgp-tools/lib/connections"
+	"github.com/derickr/dbgp-tools/lib/dbgpxml"
 	"github.com/derickr/dbgp-tools/lib/logger"
-	"github.com/derickr/dbgp-tools/lib/xml"
 	"net"
 )
 
@@ -44,16 +44,16 @@ func (csCommand *CloudStopCommand) Close() {
 }
 
 func (csCommand *CloudStopCommand) Handle() (string, error) {
-	var stop *dbgpXml.CloudStop
+	var stop *dbgpxml.CloudStop
 
 	err := csCommand.connectionList.RemoveByKey(csCommand.userId)
 
 	if err == nil {
 		csCommand.logger.LogUserInfo("cloudstop", csCommand.userId, "CloudStop::Handle: Removed connection for Cloud User from %s", (*csCommand.connection).RemoteAddr())
-		stop = dbgpXml.NewCloudStop(true, csCommand.userId, nil)
+		stop = dbgpxml.NewCloudStop(true, csCommand.userId, nil)
 	} else {
 		csCommand.logger.LogUserWarning("cloudstop", csCommand.userId, "Could not remove connection: %s", err.Error())
-		stop = dbgpXml.NewCloudStop(false, csCommand.userId, &dbgpXml.CloudStopError{ID: "CLOUD-ERR-10", Message: err.Error()})
+		stop = dbgpxml.NewCloudStop(false, csCommand.userId, &dbgpxml.CloudStopError{ID: "CLOUD-ERR-10", Message: err.Error()})
 	}
 
 	return stop.AsXML()

@@ -6,9 +6,9 @@ import (
 	"github.com/bitbored/go-ansicon" // BSD-3
 	"github.com/chzyer/readline"     // MIT
 	"github.com/derickr/dbgp-tools/lib/connections"
+	"github.com/derickr/dbgp-tools/lib/dbgpxml"
 	"github.com/derickr/dbgp-tools/lib/logger"
 	"github.com/derickr/dbgp-tools/lib/protocol"
-	"github.com/derickr/dbgp-tools/lib/xml"
 	. "github.com/logrusorgru/aurora" // WTFPL
 	"github.com/pborman/getopt/v2"    // BSD-3
 	"net"
@@ -88,7 +88,7 @@ func handleConnection(c net.Conn, rl *readline.Instance) (bool, error) {
 			fmt.Fprintf(output, "%s\n", Faint(response))
 		}
 
-		if !dbgpXml.IsValidXml(response) {
+		if !dbgpxml.IsValidXml(response) {
 			return false, fmt.Errorf("The received XML is not valid, closing connection: %s", response)
 		}
 
@@ -143,24 +143,24 @@ func handleConnection(c net.Conn, rl *readline.Instance) (bool, error) {
 }
 
 var (
-	cloudUser   = ""
-	disCloudUser   = ""
-	CloudDomain = "cloud.xdebug.com"
-	CloudPort   = "9021"
-	help        = false
-	once        = false
-	port        = 9003
-	proxy       = "localhost:9001"
-	register    = ""
-	showXML     = false
-	smartClient = false
-	ssl         = false
-	sslPort     = 9013
-	sslProxy    = "localhost:9011"
-	version     = false
-	unregister  = ""
-	output      = ansicon.Convert(os.Stdout)
-	logOutput   = logger.NewConsoleLogger(output)
+	cloudUser    = ""
+	disCloudUser = ""
+	CloudDomain  = "cloud.xdebug.com"
+	CloudPort    = "9021"
+	help         = false
+	once         = false
+	port         = 9003
+	proxy        = "localhost:9001"
+	register     = ""
+	showXML      = false
+	smartClient  = false
+	ssl          = false
+	sslPort      = 9013
+	sslProxy     = "localhost:9011"
+	version      = false
+	unregister   = ""
+	output       = ansicon.Convert(os.Stdout)
+	logOutput    = logger.NewConsoleLogger(output)
 )
 
 func printVersion() {
