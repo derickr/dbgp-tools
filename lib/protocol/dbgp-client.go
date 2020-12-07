@@ -4,8 +4,8 @@ import (
 	"bufio"
 	"encoding/xml"
 	"fmt"
+	"github.com/derickr/dbgp-tools/lib/dbgpxml"
 	"github.com/derickr/dbgp-tools/lib/logger"
-	"github.com/derickr/dbgp-tools/lib/xml"
 	"golang.org/x/net/html/charset"
 	"io"
 	"net"
@@ -80,8 +80,8 @@ func (dbgp *dbgpClient) HasCommandsToRun() bool {
 	return len(dbgp.commandsToRun) > 0
 }
 
-func (dbgp *dbgpClient) ParseInitXML(rawXmlData string) (dbgpXml.Init, error) {
-	init := dbgpXml.Init{}
+func (dbgp *dbgpClient) ParseInitXML(rawXmlData string) (dbgpxml.Init, error) {
+	init := dbgpxml.Init{}
 
 	reader := strings.NewReader(rawXmlData)
 
@@ -99,8 +99,8 @@ func (dbgp *dbgpClient) ParseInitXML(rawXmlData string) (dbgpXml.Init, error) {
 	return init, nil
 }
 
-func (dbgp *dbgpClient) parseProxyInitXML(rawXmlData string) (dbgpXml.ProxyInit, error) {
-	init := dbgpXml.ProxyInit{}
+func (dbgp *dbgpClient) parseProxyInitXML(rawXmlData string) (dbgpxml.ProxyInit, error) {
+	init := dbgpxml.ProxyInit{}
 
 	reader := strings.NewReader(rawXmlData)
 
@@ -116,8 +116,8 @@ func (dbgp *dbgpClient) parseProxyInitXML(rawXmlData string) (dbgpXml.ProxyInit,
 	return init, nil
 }
 
-func (dbgp *dbgpClient) parseProxyStopXML(rawXmlData string) (dbgpXml.ProxyStop, error) {
-	init := dbgpXml.ProxyStop{}
+func (dbgp *dbgpClient) parseProxyStopXML(rawXmlData string) (dbgpxml.ProxyStop, error) {
+	init := dbgpxml.ProxyStop{}
 
 	reader := strings.NewReader(rawXmlData)
 
@@ -133,8 +133,8 @@ func (dbgp *dbgpClient) parseProxyStopXML(rawXmlData string) (dbgpXml.ProxyStop,
 	return init, nil
 }
 
-func (dbgp *dbgpClient) parseCloudInitXML(rawXmlData string) (dbgpXml.CloudInit, error) {
-	init := dbgpXml.CloudInit{}
+func (dbgp *dbgpClient) parseCloudInitXML(rawXmlData string) (dbgpxml.CloudInit, error) {
+	init := dbgpxml.CloudInit{}
 
 	reader := strings.NewReader(rawXmlData)
 
@@ -150,8 +150,8 @@ func (dbgp *dbgpClient) parseCloudInitXML(rawXmlData string) (dbgpXml.CloudInit,
 	return init, nil
 }
 
-func (dbgp *dbgpClient) parseCloudStopXML(rawXmlData string) (dbgpXml.CloudStop, error) {
-	init := dbgpXml.CloudStop{}
+func (dbgp *dbgpClient) parseCloudStopXML(rawXmlData string) (dbgpxml.CloudStop, error) {
+	init := dbgpxml.CloudStop{}
 
 	reader := strings.NewReader(rawXmlData)
 
@@ -167,8 +167,8 @@ func (dbgp *dbgpClient) parseCloudStopXML(rawXmlData string) (dbgpXml.CloudStop,
 	return init, nil
 }
 
-func (dbgp *dbgpClient) parseNotifyXML(rawXmlData string) (dbgpXml.Notify, error) {
-	notify := dbgpXml.Notify{}
+func (dbgp *dbgpClient) parseNotifyXML(rawXmlData string) (dbgpxml.Notify, error) {
+	notify := dbgpxml.Notify{}
 
 	reader := strings.NewReader(rawXmlData)
 
@@ -199,8 +199,8 @@ func (dbgp *dbgpClient) HasAbortBeenSignalled() bool {
 	return dbgp.abortRequested
 }
 
-func (dbgp *dbgpClient) parseResponseXML(rawXmlData string) (dbgpXml.Response, error) {
-	response := dbgpXml.Response{}
+func (dbgp *dbgpClient) parseResponseXML(rawXmlData string) (dbgpxml.Response, error) {
+	response := dbgpxml.Response{}
 
 	reader := strings.NewReader(rawXmlData)
 
@@ -217,8 +217,8 @@ func (dbgp *dbgpClient) parseResponseXML(rawXmlData string) (dbgpXml.Response, e
 	return response, nil
 }
 
-func (dbgp *dbgpClient) parseStreamXML(rawXmlData string) (dbgpXml.Stream, error) {
-	stream := dbgpXml.Stream{}
+func (dbgp *dbgpClient) parseStreamXML(rawXmlData string) (dbgpxml.Stream, error) {
+	stream := dbgpxml.Stream{}
 
 	reader := strings.NewReader(rawXmlData)
 
@@ -392,7 +392,7 @@ func (dbgp *dbgpClient) RunCommand(command string) error {
 		return err
 	}
 
-	if !dbgpXml.IsValidXml(response) {
+	if !dbgpxml.IsValidXml(response) {
 		return fmt.Errorf("The received XML is not valid, closing connection: %s", response)
 	}
 

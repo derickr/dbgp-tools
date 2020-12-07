@@ -3,8 +3,8 @@ package protocol
 import (
 	"fmt"
 	"github.com/derickr/dbgp-tools/lib/connections"
+	"github.com/derickr/dbgp-tools/lib/dbgpxml"
 	"github.com/derickr/dbgp-tools/lib/logger"
-	"github.com/derickr/dbgp-tools/lib/xml"
 	. "github.com/logrusorgru/aurora" // WTFPL
 	"io"
 )
@@ -28,11 +28,11 @@ func UnregisterCloudClient(cloudDomain string, cloudPort string, cloudUser strin
 	response, err := reader.ReadResponse()
 
 	if err != nil { // reading failed
-		fmt.Fprintf(output, "Reading failed: %s", err);
+		fmt.Fprintf(output, "Reading failed: %s", err)
 		return
 	}
 
-	if !dbgpXml.IsValidXml(response) {
+	if !dbgpxml.IsValidXml(response) {
 		fmt.Fprintf(output, "The received XML is not valid, closing connection: %s", response)
 		return
 	}
@@ -45,4 +45,3 @@ func UnregisterCloudClient(cloudDomain string, cloudPort string, cloudUser strin
 	}
 	fmt.Fprintln(output, formattedResponse)
 }
-

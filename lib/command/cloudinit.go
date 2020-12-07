@@ -3,8 +3,8 @@ package command
 import (
 	"fmt"
 	"github.com/derickr/dbgp-tools/lib/connections"
+	"github.com/derickr/dbgp-tools/lib/dbgpxml"
 	"github.com/derickr/dbgp-tools/lib/logger"
-	"github.com/derickr/dbgp-tools/lib/xml"
 	"net"
 )
 
@@ -50,18 +50,18 @@ func (ciCommand *CloudInitCommand) Close() {
 }
 
 func (ciCommand *CloudInitCommand) Handle() (string, error) {
-	var init *dbgpXml.CloudInit
+	var init *dbgpxml.CloudInit
 
 	conn := connections.NewConnection(ciCommand.userId, "", "", true, ciCommand.connection)
 	err := ciCommand.connectionList.Add(conn)
 
 	if err == nil {
 		ciCommand.logger.LogUserInfo("cloudinit", ciCommand.userId, "Added connection for Cloud User from %s", (*ciCommand.connection).RemoteAddr())
-		init = dbgpXml.NewCloudInit(true, ciCommand.userId, nil, false, nil)
+		init = dbgpxml.NewCloudInit(true, ciCommand.userId, nil, false, nil)
 	} else {
 		ciCommand.needsRemoving = false
 		ciCommand.logger.LogUserWarning("cloudinit", ciCommand.userId, "Could not add connection: %s", err.Error())
-		init = dbgpXml.NewCloudInit(false, ciCommand.userId, &dbgpXml.CloudInitError{ID: "CLOUD-ERR-11", Message: err.Error()}, false, nil)
+		init = dbgpxml.NewCloudInit(false, ciCommand.userId, &dbgpxml.CloudInitError{ID: "CLOUD-ERR-11", Message: err.Error()}, false, nil)
 	}
 
 	return init.AsXML()

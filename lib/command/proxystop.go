@@ -3,8 +3,8 @@ package command
 import (
 	"fmt"
 	"github.com/derickr/dbgp-tools/lib/connections"
+	"github.com/derickr/dbgp-tools/lib/dbgpxml"
 	"github.com/derickr/dbgp-tools/lib/logger"
-	"github.com/derickr/dbgp-tools/lib/xml"
 )
 
 type ProxyStopCommand struct {
@@ -22,16 +22,16 @@ func (piCommand *ProxyStopCommand) GetName() string {
 }
 
 func (piCommand *ProxyStopCommand) Handle() (string, error) {
-	var stop *dbgpXml.ProxyStop
+	var stop *dbgpxml.ProxyStop
 
 	err := piCommand.connectionList.RemoveByKey(piCommand.ideKey)
 
 	if err == nil {
 		piCommand.logger.LogUserInfo("proxystop", piCommand.ideKey, "Removed connection for IDE Key '%s'", piCommand.ideKey)
-		stop = dbgpXml.NewProxyStop(true, piCommand.ideKey, nil)
+		stop = dbgpxml.NewProxyStop(true, piCommand.ideKey, nil)
 	} else {
 		piCommand.logger.LogUserWarning("proxystop", piCommand.ideKey, "Could not remove connection: %s", err.Error())
-		stop = dbgpXml.NewProxyStop(false, piCommand.ideKey, &dbgpXml.ProxyInitError{ID: "PROXY-ERR-02", Message: err.Error()})
+		stop = dbgpxml.NewProxyStop(false, piCommand.ideKey, &dbgpxml.ProxyInitError{ID: "PROXY-ERR-02", Message: err.Error()})
 	}
 
 	return stop.AsXML()

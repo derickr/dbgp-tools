@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"github.com/bitbored/go-ansicon" // BSD-3
 	"github.com/derickr/dbgp-tools/lib/connections"
+	"github.com/derickr/dbgp-tools/lib/dbgpxml"
 	"github.com/derickr/dbgp-tools/lib/logger"
 	"github.com/derickr/dbgp-tools/lib/protocol"
 	"github.com/derickr/dbgp-tools/lib/proxy"
 	"github.com/derickr/dbgp-tools/lib/server"
-	"github.com/derickr/dbgp-tools/lib/xml"
 	"github.com/pborman/getopt/v2" // BSD-3
 	"net"
 	"os"
@@ -83,7 +83,7 @@ func handleConnection(c net.Conn, logger logger.Logger) error {
 		return err
 	}
 
-	if !dbgpXml.IsValidXml(response) {
+	if !dbgpxml.IsValidXml(response) {
 		return fmt.Errorf("The received XML is not valid, closing connection: %s", response)
 	}
 
@@ -106,10 +106,10 @@ func main() {
 	var clientSSLServer *server.Server
 	var serverSSLServer *server.Server
 
-	logger := logger.NewConsoleLogger(output)
+	log := logger.NewConsoleLogger(output)
 
 	printStartUp()
-	checkEnableSSLServers(logger)
+	checkEnableSSLServers(log)
 	handleArguments()
 
 	ideConnectionList := connections.NewConnectionList()
@@ -119,46 +119,46 @@ func main() {
 
 	if cloudUser != "" {
 		if disCloudUser != "" {
-			protocol.UnregisterCloudClient(CloudDomain, CloudPort, disCloudUser, output, logger)
+			protocol.UnregisterCloudClient(CloudDomain, CloudPort, disCloudUser, output, log)
 		}
 		cloudClient = server.NewServer(
 			"cloud-client-ssl",
 			resolveTCP(connections.CloudHostFromUserId(CloudDomain, CloudPort, cloudUser)),
 			syncGroup,
-			logger)
-		err = cloudClient.CloudConnect(proxy.NewServerHandler(ideConnectionList, logger), cloudUser, signalShutdown)
+			log)
+		err = cloudClient.CloudConnect(proxy.NewServerHandler(ideConnectionList, log), cloudUser, signalShutdown)
 	} else {
-		serverServer = server.NewServer("server", resolveTCP(serverAddress), syncGroup, logger)
-		go serverServer.Listen(proxy.NewServerHandler(ideConnectionList, logger))
+		serverServer = server.NewServer("server", resolveTCP(serverAddress), syncGroup, log)
+		go serverServer.Listen(proxy.NewServerHandler(ideConnectionList, log))
 
 		if enableSSLServers {
-			serverSSLServer = server.NewServer("server-ssl", resolveTCP(serverSSLAddress), syncGroup, logger)
-			go serverSSLServer.ListenSSL(proxy.NewServerHandler(ideConnectionList, logger))
+			serverSSLServer = server.NewServer("server-ssl", resolveTCP(serverSSLAddress), syncGroup, log)
+			go serverSSLServer.ListenSSL(proxy.NewServerHandler(ideConnectionList, log))
 		}
 	}
 
 	if err != nil {
-		logger.LogError("dbgpProxy", "Proxy could not be started: %s", err)
+		log.LogError("dbgpProxy", "Proxy could not be started: %s", err)
 		return
 	}
 
-	clientServer := server.NewServer("client", resolveTCP(clientAddress), syncGroup, logger)
-	go clientServer.Listen(proxy.NewClientHandler(ideConnectionList, logger))
+	clientServer := server.NewServer("client", resolveTCP(clientAddress), syncGroup, log)
+	go clientServer.Listen(proxy.NewClientHandler(ideConnectionList, log))
 	if enableSSLServers {
-		clientSSLServer = server.NewServer("client-ssl", resolveTCP(clientSSLAddress), syncGroup, logger)
-		go clientSSLServer.ListenSSL(proxy.NewClientHandler(ideConnectionList, logger))
+		clientSSLServer = server.NewServer("client-ssl", resolveTCP(clientSSLAddress), syncGroup, log)
+		go clientSSLServer.ListenSSL(proxy.NewClientHandler(ideConnectionList, log))
 	}
 
-	logger.LogInfo("dbgpProxy", "Proxy started")
+	log.LogInfo("dbgpProxy", "Proxy started")
 
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt)
 
 	select {
 	case s := <-signals:
-		logger.LogWarning("dbgpProxy", "Signal received: %s", s)
+		log.LogWarning("dbgpProxy", "Signal received: %s", s)
 	case <-signalShutdown:
-		logger.LogWarning("dbgpProxy", "Shutdown requested")
+		log.LogWarning("dbgpProxy", "Shutdown requested")
 	}
 
 	clientServer.Stop()
@@ -177,7 +177,7 @@ func main() {
 
 	syncGroup.Wait()
 
-	logger.LogInfo("dbgpProxy", "Proxy stopped")
+	log.LogInfo("dbgpProxy", "Proxy stopped")
 }
 
 func resolveTCP(host string) *net.TCPAddr {

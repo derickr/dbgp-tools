@@ -3,8 +3,8 @@ package command
 import (
 	"fmt"
 	"github.com/derickr/dbgp-tools/lib/connections"
+	"github.com/derickr/dbgp-tools/lib/dbgpxml"
 	"github.com/derickr/dbgp-tools/lib/logger"
-	"github.com/derickr/dbgp-tools/lib/xml"
 	"strconv"
 )
 
@@ -27,7 +27,7 @@ func (piCommand *ProxyInitCommand) GetName() string {
 }
 
 func (piCommand *ProxyInitCommand) Handle() (string, error) {
-	var init *dbgpXml.ProxyInit
+	var init *dbgpxml.ProxyInit
 
 	conn := connections.NewConnection(piCommand.ideKey, piCommand.ipAddress, strconv.Itoa(piCommand.port), piCommand.ssl, nil)
 	err := piCommand.connectionList.Add(conn)
@@ -38,10 +38,10 @@ func (piCommand *ProxyInitCommand) Handle() (string, error) {
 		} else {
 			piCommand.logger.LogUserInfo("proxyinit", piCommand.ideKey, "Added connection for IDE Key '%s': %s:%d", piCommand.ideKey, piCommand.ipAddress, piCommand.port)
 		}
-		init = dbgpXml.NewProxyInit(true, piCommand.ideKey, piCommand.ipAddress, piCommand.port, piCommand.ssl, nil)
+		init = dbgpxml.NewProxyInit(true, piCommand.ideKey, piCommand.ipAddress, piCommand.port, piCommand.ssl, nil)
 	} else {
 		piCommand.logger.LogUserWarning("proxyinit", piCommand.ideKey, "Could not add connection: %s", err.Error())
-		init = dbgpXml.NewProxyInit(false, piCommand.ideKey, piCommand.ipAddress, piCommand.port, piCommand.ssl, &dbgpXml.ProxyInitError{ID: "PROXY-ERR-01", Message: err.Error()})
+		init = dbgpxml.NewProxyInit(false, piCommand.ideKey, piCommand.ipAddress, piCommand.port, piCommand.ssl, &dbgpxml.ProxyInitError{ID: "PROXY-ERR-01", Message: err.Error()})
 	}
 
 	return init.AsXML()

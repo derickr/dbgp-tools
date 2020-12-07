@@ -1,4 +1,4 @@
-package dbgpXml
+package dbgpxml
 
 import (
 	"bytes"
@@ -101,12 +101,12 @@ func (init CloudInit) String() string {
 	} else {
 		connectionsLeft := "??"
 		connectionsMade := "??"
-		accountActive := BrightYellow("unknown");
+		accountActive := BrightYellow("unknown")
 
 		if init.AccountInfo != nil {
 			connectionsLeft = strconv.Itoa(init.AccountInfo.ConnectionsRemaining)
 			connectionsMade = strconv.Itoa(init.AccountInfo.ConnectionsMade)
-			if (init.AccountInfo.Active) {
+			if init.AccountInfo.Active {
 				accountActive = BrightGreen(Bold("active"))
 			} else {
 				accountActive = BrightRed(Bold("not active"))
