@@ -55,6 +55,8 @@ func setupSignalHandler(protocol CommandRunner) {
 	}()
 }
 
+// TODO(florin): This signature can be simplified to remove the "bool" return value
+// 	as the there is never a case when " return bool == true, nonNilErr" are present.
 func handleConnection(c net.Conn, rl *readline.Instance) (bool, error) {
 	var lastCommand string
 
@@ -278,6 +280,7 @@ func runAsCloudClient(logger logger.Logger) {
 	defer rl.Close()
 
 	command := "cloudinit -u " + cloudUser
+	// TODO(florin): This error should be handled
 	proto.SendCommand(command)
 
 	for {

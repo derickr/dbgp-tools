@@ -8,6 +8,7 @@ import (
 	"strconv"
 )
 
+// TODO(florin): This seems to be the wrong XML comment
 /*
 <init xmlns="urn:debugger_protocol_v1"
 xmlns:xdebug="https://xdebug.org/dbgp/xdebug"

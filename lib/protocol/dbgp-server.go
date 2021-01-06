@@ -44,6 +44,7 @@ func (dbgp *DbgpServer) parseLine(data string) (command.DbgpCommand, error) {
 		return command.CreateProxyStop(dbgp.connectionList, parts[1:], dbgp.logger)
 	}
 
+	// TODO(florin): '%s' can be replaced with %q and the formatting function will handle the quotes
 	return nil, fmt.Errorf("Don't understand command '%s'", parts)
 }
 
@@ -60,6 +61,7 @@ func (dbgp *DbgpServer) parseCloudLine(data string) (command.DbgpCloudCommand, e
 	return nil, fmt.Errorf("Don't understand command '%s'", parts)
 }
 
+// TODO(florin): I would extract this into a readCommand() method and deduplicate ReadCloudCommand
 func (dbgp *DbgpServer) ReadCommand() (command.DbgpCommand, error) {
 	/* Read data */
 	data, err := dbgp.reader.ReadBytes('\000')

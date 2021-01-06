@@ -60,6 +60,13 @@ func registerWithProxy(address string, idekey string) error {
 		command = command + " -s 1"
 	}
 
+	// TODO(florin): Should the error here be handled?
+	//
+	// TODO(florin): Everything from here to the end of the function
+	// 	seems to duplicate in other parts of the code, e.g.
+	// 	lib/protocol/cloud.go:UnregisterCloudClient()
+	// 	As such, perhaps this can be abstracted away in a helper function
+	// 	which should also include the creation of the client/connection part.
 	proto.SendCommand(command)
 
 	response, err := proto.ReadResponse()
@@ -71,6 +78,8 @@ func registerWithProxy(address string, idekey string) error {
 		fmt.Fprintf(output, "%s\n", Faint(response))
 	}
 
+	// TODO(florin): this can return a nil value, imho should be handled
+	// 	like it is in lib/protocol/cloud.go:UnregisterCloudClient()
 	formatted := proto.FormatXML(response)
 
 	fmt.Fprintln(output, formatted)
@@ -82,6 +91,8 @@ func registerWithProxy(address string, idekey string) error {
 	return nil
 }
 
+// TODO(florin): I would merge the registerWithProxy and unregisterWithProxy functions
+// 	since they are mostly the same
 func unregisterWithProxy(address string, idekey string) error {
 	conn, err := connections.ConnectTo(address, ssl)
 	if err != nil {
