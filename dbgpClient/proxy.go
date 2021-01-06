@@ -35,7 +35,7 @@ func handleProxyArguments() {
 
 	if unregister != "" {
 		if cloudUser != "" {
-			fmt.Fprintf(output, "%s\n", BrightRed(Bold("Refusing to register to proxy because we're connecting to Xdebug Cloud")))
+			fmt.Fprintf(output, "%s\n", BrightRed(Bold("Refusing to unregister to proxy because we're connecting to Xdebug Cloud")))
 			os.Exit(2)
 		}
 		err := unregisterWithProxy(proxy, unregister)

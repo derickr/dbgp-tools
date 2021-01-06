@@ -20,6 +20,7 @@ type Server struct {
 	logger     logger.Logger
 	address    *net.TCPAddr
 	group      *sync.WaitGroup
+	stopGuard  *sync.RWMutex
 	stop       bool
 	serverType string
 }

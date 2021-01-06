@@ -323,10 +323,9 @@ func (dbgp *dbgpClient) SendCommand(line string) error {
 	_, err := dbgp.writer.Write([]byte(line + "\000"))
 	if err != nil {
 		dbgp.logger.LogError("dbgp-client", "Error writing data '%s': %s", line, err.Error())
-		return err
 	}
 
-	return nil
+	return err
 }
 
 func (dbgp *dbgpClient) FormatXML(rawXmlData string) Response {

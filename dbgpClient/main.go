@@ -46,12 +46,11 @@ func setupSignalHandler(protocol CommandRunner) {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	go func() {
-		for _ = range c {
-			if protocol.IsInConversation() {
-				protocol.AddCommandToRun("break")
-			} else {
-				protocol.SignalAbort()
-			}
+		<-c
+		if protocol.IsInConversation() {
+			protocol.AddCommandToRun("break")
+		} else {
+			protocol.SignalAbort()
 		}
 	}()
 }
@@ -138,8 +137,6 @@ func handleConnection(c net.Conn, rl *readline.Instance) (bool, error) {
 
 		lastCommand = line
 	}
-
-	return false, nil
 }
 
 var (
