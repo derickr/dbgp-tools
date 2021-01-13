@@ -46,16 +46,17 @@ func setupSignalHandler(protocol CommandRunner) {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	go func() {
-		for _ = range c {
-			if protocol.IsInConversation() {
-				protocol.AddCommandToRun("break")
-			} else {
-				protocol.SignalAbort()
-			}
+		<-c
+		if protocol.IsInConversation() {
+			protocol.AddCommandToRun("break")
+		} else {
+			protocol.SignalAbort()
 		}
 	}()
 }
 
+// TODO(florin): This signature can be simplified to remove the "bool" return value
+// 	as the there is never a case when " return bool == true, nonNilErr" are present.
 func handleConnection(c net.Conn, rl *readline.Instance) (bool, error) {
 	var lastCommand string
 
@@ -138,8 +139,6 @@ func handleConnection(c net.Conn, rl *readline.Instance) (bool, error) {
 
 		lastCommand = line
 	}
-
-	return false, nil
 }
 
 var (
@@ -281,6 +280,7 @@ func runAsCloudClient(logger logger.Logger) {
 	defer rl.Close()
 
 	command := "cloudinit -u " + cloudUser
+	// TODO(florin): This error should be handled
 	proto.SendCommand(command)
 
 	for {

@@ -30,10 +30,15 @@ type dbgpClient struct {
 	counter     int
 	smartClient bool
 
-	lastSourceBegin  int
+	lastSourceBegin int
+	// TODO(florin): These two variables, IsInConversation and abortRequested
+	// 	should be guarded by a (rw)mutex as they can cause a race condition between
+	// 	when they are read from (their respective getters) and written to (in setupSignalHandler which runs in a separate goroutine).
 	isInConversation bool
 	abortRequested   bool
-	commandsToRun    []string
+	// TODO(florin): I would use a channel here to add commands to it
+	// 	which would simplify the management of the queue
+	commandsToRun []string
 }
 
 func NewDbgpClient(c net.Conn, isSmart bool, logger logger.Logger) *dbgpClient {
@@ -78,6 +83,38 @@ func (dbgp *dbgpClient) GetNextCommand() (string, bool) {
 
 func (dbgp *dbgpClient) HasCommandsToRun() bool {
 	return len(dbgp.commandsToRun) > 0
+}
+
+// TODO(florin): I would abstract away all the parse*XML methods in a single parseXML
+// 	method which accepts an "interface{}" and returns one, and does assertions inside to
+// 	figure out which xml is decoded, return it, and assert the result.
+// 	This would remove a lot of duplicated code from here.
+// 	E.g. see below, and how this could look like, compare parseProxyInitXML with parseProxyInitXMLFlorin
+
+func (dbgp *dbgpClient) parseXML(rawXmlData string, result interface{}) error {
+	reader := strings.NewReader(rawXmlData)
+
+	decoder := xml.NewDecoder(reader)
+	decoder.CharsetReader = charset.NewReaderLabel
+
+	return decoder.Decode(result)
+}
+
+func (dbgp *dbgpClient) ParseInitXMLFlorin(rawXmlData string) (dbgpxml.Init, error) {
+	init := dbgpxml.Init{}
+
+	err := dbgp.parseXML(rawXmlData, &init)
+	if err == nil {
+		dbgp.TheConversationIsOn()
+	}
+
+	return init, err
+}
+
+func (dbgp *dbgpClient) parseProxyInitXMLFlorin(rawXmlData string) (dbgpxml.ProxyInit, error) {
+	init := dbgpxml.ProxyInit{}
+	err := dbgp.parseXML(rawXmlData, &init)
+	return init, err
 }
 
 func (dbgp *dbgpClient) ParseInitXML(rawXmlData string) (dbgpxml.Init, error) {
@@ -322,15 +359,19 @@ func (dbgp *dbgpClient) SendCommand(line string) error {
 
 	_, err := dbgp.writer.Write([]byte(line + "\000"))
 	if err != nil {
+		// TODO(florin): Not sure why err.Error() is called, replacing it with err should be ok
 		dbgp.logger.LogError("dbgp-client", "Error writing data '%s': %s", line, err.Error())
-		return err
 	}
 
-	return nil
+	return err
 }
 
 func (dbgp *dbgpClient) FormatXML(rawXmlData string) Response {
 	var response Response
+
+	// TODO(florin): This could be replaced with a slice like this
+	// 	[]func(string) (dbgpxml.Response, error){dbgp.parseResponseXML, dbgp.ParseInitXML, ...}
+	// 	and a for loop to run over each of the function types and see which one matches
 
 	response, err := dbgp.parseResponseXML(rawXmlData)
 
@@ -384,6 +425,7 @@ func (dbgp *dbgpClient) FormatXML(rawXmlData string) Response {
 }
 
 func (dbgp *dbgpClient) RunCommand(command string) error {
+	// TODO(florin): Should this error be handled?
 	dbgp.SendCommand(command)
 
 	response, err := dbgp.ReadResponse()

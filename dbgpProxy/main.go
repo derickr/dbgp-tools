@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/bitbored/go-ansicon" // BSD-3
 	"github.com/derickr/dbgp-tools/lib/connections"
-	"github.com/derickr/dbgp-tools/lib/dbgpxml"
 	"github.com/derickr/dbgp-tools/lib/logger"
 	"github.com/derickr/dbgp-tools/lib/protocol"
 	"github.com/derickr/dbgp-tools/lib/proxy"
@@ -14,7 +13,6 @@ import (
 	"os"
 	"os/signal"
 	"sync"
-	// "time"
 )
 
 var clientVersion = "0.4.2-dev"
@@ -74,33 +72,7 @@ func handleArguments() {
 	}
 }
 
-func handleConnection(c net.Conn, logger logger.Logger) error {
-	reader := protocol.NewDbgpClient(c, false, logger)
-
-	response, err := reader.ReadResponse()
-
-	if err != nil { // reading failed
-		return err
-	}
-
-	if !dbgpxml.IsValidXml(response) {
-		return fmt.Errorf("The received XML is not valid, closing connection: %s", response)
-	}
-
-	formattedResponse := reader.FormatXML(response)
-	if formattedResponse.IsSuccess() == false {
-		return fmt.Errorf("%s", formattedResponse.GetErrorMessage())
-	}
-
-	if formattedResponse == nil {
-		return fmt.Errorf("Could not interpret XML, closing connection.")
-	}
-
-	return nil
-}
-
 func main() {
-	var err error
 	var cloudClient *server.Server
 	var serverServer *server.Server
 	var clientSSLServer *server.Server
@@ -126,7 +98,11 @@ func main() {
 			resolveTCP(connections.CloudHostFromUserId(CloudDomain, CloudPort, cloudUser)),
 			syncGroup,
 			log)
-		err = cloudClient.CloudConnect(proxy.NewServerHandler(ideConnectionList, log), cloudUser, signalShutdown)
+		err := cloudClient.CloudConnect(proxy.NewServerHandler(ideConnectionList, log), cloudUser, signalShutdown)
+		if err != nil {
+			log.LogError("dbgpProxy", "Proxy could not be started: %s", err)
+			return
+		}
 	} else {
 		serverServer = server.NewServer("server", resolveTCP(serverAddress), syncGroup, log)
 		go serverServer.Listen(proxy.NewServerHandler(ideConnectionList, log))
@@ -135,11 +111,6 @@ func main() {
 			serverSSLServer = server.NewServer("server-ssl", resolveTCP(serverSSLAddress), syncGroup, log)
 			go serverSSLServer.ListenSSL(proxy.NewServerHandler(ideConnectionList, log))
 		}
-	}
-
-	if err != nil {
-		log.LogError("dbgpProxy", "Proxy could not be started: %s", err)
-		return
 	}
 
 	clientServer := server.NewServer("client", resolveTCP(clientAddress), syncGroup, log)

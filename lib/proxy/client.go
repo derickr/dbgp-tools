@@ -91,6 +91,13 @@ func (handler *ServerHandler) setupForwarder(conn net.Conn, initialPacket []byte
 		serverChan <- err
 	}()
 
+	// TODO(florin): This for isn't needed as the select will wait for the first err message to be received
+	// 	by either of the channels, then return from the function.
+	// TODO(florin): What I'm not sure I understand is what the for and the above two goroutines do.
+	// 	The way I read the code is:
+	// 	- as long as there's a timeout, keep reading from the connection
+	// 	- when a timeout happens, exit from the function
+	// 	However, the two goroutines will still be alive and running
 	for {
 		select {
 		case err = <-serverChan:
