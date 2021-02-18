@@ -121,7 +121,7 @@ func (server *Server) CloudConnect(handler Handler, cloudUser string, shutdownSi
 
 	server.logger.LogUserInfo("server", cloudUser, "Connected to Xdebug Cloud on %s", server.address)
 
-	err = protocol.NewDbgpClient(connToCloud, false, server.logger).RunCommand("cloudinit -u " + cloudUser)
+	err = protocol.NewDbgpClient(connToCloud, server.logger).RunCommand("cloudinit -u " + cloudUser)
 	if err != nil {
 		server.logger.LogUserError("server", cloudUser, "Not connected to Xdebug Cloud: %s", err)
 		return err

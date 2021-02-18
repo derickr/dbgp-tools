@@ -106,7 +106,7 @@ func (handler *ServerHandler) setupForwarder(conn net.Conn, initialPacket []byte
 }
 
 func (handler *ServerHandler) sendDetach(conn net.Conn) {
-	err := protocol.NewDbgpClient(conn, false, handler.logger).RunCommand("detach -- \"dbgpProxy has no IDE connected to it\"")
+	err := protocol.NewDbgpClient(conn, handler.logger).RunCommand("detach -- \"dbgpProxy has no IDE connected to it\"")
 	if err != nil {
 		handler.logger.LogError("proxy-client", "Could not send 'detach': %s", err)
 		return
@@ -121,7 +121,7 @@ func (handler *ServerHandler) Handle(conn net.Conn) error {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
-	reader := protocol.NewDbgpClient(conn, false, handler.logger)
+	reader := protocol.NewDbgpClient(conn, handler.logger)
 
 ConnectionsLoop:
 	for {

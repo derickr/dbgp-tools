@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/derickr/dbgp-tools/lib/dbgpxml"
 	"github.com/derickr/dbgp-tools/lib/logger"
+	. "github.com/logrusorgru/aurora" // WTFPL
 	"golang.org/x/net/html/charset"
 	"io"
 	"net"
@@ -28,15 +29,13 @@ type dbgpClient struct {
 	reader      *bufio.Reader
 	writer      io.Writer
 	counter     int
-	smartClient bool
 
 	lastSourceBegin  int
-	isInConversation bool
 	abortRequested   bool
 	commandsToRun    []string
 }
 
-func NewDbgpClient(c net.Conn, isSmart bool, logger logger.Logger) *dbgpClient {
+func NewDbgpClient(c net.Conn, logger logger.Logger) *dbgpClient {
 	var tmp dbgpClient
 
 	tmp.connection = c
@@ -45,39 +44,9 @@ func NewDbgpClient(c net.Conn, isSmart bool, logger logger.Logger) *dbgpClient {
 	tmp.writer = c
 	tmp.counter = 1
 	tmp.lastSourceBegin = 1
-	tmp.smartClient = isSmart
-	tmp.isInConversation = false
 	tmp.abortRequested = false
 
-	if isSmart {
-		tmp.commandsToRun = append(tmp.commandsToRun, "feature_get -n supports_async")
-	}
-
 	return &tmp
-}
-
-func (dbgp *dbgpClient) AddCommandToRun(command string) {
-	if !dbgp.smartClient {
-		return
-	}
-
-	dbgp.commandsToRun = append(dbgp.commandsToRun, command)
-}
-
-func (dbgp *dbgpClient) GetNextCommand() (string, bool) {
-	var item string
-
-	if len(dbgp.commandsToRun) > 0 {
-		item, dbgp.commandsToRun = dbgp.commandsToRun[0], dbgp.commandsToRun[1:]
-
-		return item, true
-	}
-
-	return "", false
-}
-
-func (dbgp *dbgpClient) HasCommandsToRun() bool {
-	return len(dbgp.commandsToRun) > 0
 }
 
 func (dbgp *dbgpClient) ParseInitXML(rawXmlData string) (dbgpxml.Init, error) {
@@ -93,8 +62,6 @@ func (dbgp *dbgpClient) ParseInitXML(rawXmlData string) (dbgpxml.Init, error) {
 	if err != nil {
 		return init, err
 	}
-
-	dbgp.TheConversationIsOn()
 
 	return init, nil
 }
@@ -182,13 +149,6 @@ func (dbgp *dbgpClient) parseNotifyXML(rawXmlData string) (dbgpxml.Notify, error
 	}
 
 	return notify, nil
-}
-
-func (dbgp *dbgpClient) TheConversationIsOn() {
-	dbgp.isInConversation = true
-}
-func (dbgp *dbgpClient) IsInConversation() bool {
-	return dbgp.isInConversation
 }
 
 func (dbgp *dbgpClient) SignalAbort() {
@@ -323,10 +283,9 @@ func (dbgp *dbgpClient) SendCommand(line string) error {
 	_, err := dbgp.writer.Write([]byte(line + "\000"))
 	if err != nil {
 		dbgp.logger.LogError("dbgp-client", "Error writing data '%s': %s", line, err.Error())
-		return err
 	}
 
-	return nil
+	return err
 }
 
 func (dbgp *dbgpClient) FormatXML(rawXmlData string) Response {
@@ -384,7 +343,11 @@ func (dbgp *dbgpClient) FormatXML(rawXmlData string) Response {
 }
 
 func (dbgp *dbgpClient) RunCommand(command string) error {
-	dbgp.SendCommand(command)
+	err := dbgp.SendCommand(command)
+
+	if err != nil { // writing failed
+		return err
+	}
 
 	response, err := dbgp.ReadResponse()
 
@@ -404,6 +367,44 @@ func (dbgp *dbgpClient) RunCommand(command string) error {
 
 	if formattedResponse == nil {
 		return fmt.Errorf("Could not interpret XML, closing connection.")
+	}
+
+	return nil
+}
+
+/** MERGE WITH ABOVE **/
+func RunAndQuit(conn net.Conn, command string, output io.Writer, logOutput logger.Logger, showXML bool) error {
+	proto := NewDbgpClient(conn, logOutput)
+
+	err := proto.SendCommand(command)
+	if err != nil {
+		return fmt.Errorf("Sending %q failed: %s", command, err)
+	}
+
+	response, err := proto.ReadResponse()
+	if err != nil {
+		return fmt.Errorf("%q: %s", command, err)
+	}
+
+	if !dbgpxml.IsValidXml(response) {
+		fmt.Fprintf(output, "The received XML is not valid: %s", response)
+		return nil
+	}
+
+	if showXML {
+		fmt.Fprintf(output, "%s\n", Faint(response))
+	}
+
+	formatted := proto.FormatXML(response)
+
+	if formatted == nil {
+		fmt.Fprintf(output, "Could not interpret XML")
+		return nil
+	}
+	fmt.Fprintln(output, formatted)
+
+	if !formatted.IsSuccess() {
+		return fmt.Errorf("%q failed", command)
 	}
 
 	return nil

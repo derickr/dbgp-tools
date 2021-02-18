@@ -94,17 +94,18 @@ func (list *ConnectionList) Add(connection *Connection) error {
 
 func (list *ConnectionList) RemoveByKey(ideKey string) error {
 	list.Lock()
-	defer list.Unlock()
 
 	connection, ok := list.connections[ideKey]
 
 	if !ok {
+		list.Unlock()
 		return fmt.Errorf("A client for '%s' has not been previously registered", ideKey)
 	}
 
-	connection.ControlRequests <- NewCloseConnectionControl()
-
 	delete(list.connections, ideKey)
+	list.Unlock()
+
+	connection.ControlRequests <- NewCloseConnectionControl()
 
 	return nil
 }

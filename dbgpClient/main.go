@@ -17,7 +17,7 @@ import (
 	"time"
 )
 
-var clientVersion = "0.4.2-dev"
+var clientVersion = "0.5.0-dev"
 
 func displayHelp() {
 	fmt.Fprintf(output, `
@@ -37,8 +37,6 @@ exist.
 }
 
 type CommandRunner interface {
-	AddCommandToRun(string)
-	IsInConversation() bool
 	SignalAbort()
 }
 
@@ -47,11 +45,7 @@ func setupSignalHandler(protocol CommandRunner) {
 	signal.Notify(c, os.Interrupt)
 	go func() {
 		for _ = range c {
-			if protocol.IsInConversation() {
-				protocol.AddCommandToRun("break")
-			} else {
-				protocol.SignalAbort()
-			}
+			protocol.SignalAbort()
 		}
 	}()
 }
@@ -59,7 +53,7 @@ func setupSignalHandler(protocol CommandRunner) {
 func handleConnection(c net.Conn, rl *readline.Instance) (bool, error) {
 	var lastCommand string
 
-	reader := protocol.NewDbgpClient(c, smartClient, logOutput)
+	reader := protocol.NewDbgpClient(c, logOutput)
 
 	setupSignalHandler(reader)
 	defer signal.Reset()
@@ -72,10 +66,6 @@ func handleConnection(c net.Conn, rl *readline.Instance) (bool, error) {
 		if timedOut {
 			if reader.HasAbortBeenSignalled() {
 				return true, nil
-			}
-			if reader.HasCommandsToRun() {
-				err = nil // set err to nil, so it resets the timeout
-				goto ReadInput
 			}
 			continue
 		}
@@ -112,11 +102,7 @@ func handleConnection(c net.Conn, rl *readline.Instance) (bool, error) {
 		}
 
 	ReadInput:
-		line, found := reader.GetNextCommand()
-
-		if !found { // if there was no command in the queue, read from the command line
-			line, err = rl.Readline()
-		}
+		line, err := rl.Readline()
 
 		if err != nil { // io.EOF
 			return false, err
@@ -153,7 +139,6 @@ var (
 	proxy        = "localhost:9001"
 	register     = ""
 	showXML      = false
-	smartClient  = false
 	ssl          = false
 	sslPort      = 9013
 	sslProxy     = "localhost:9011"
@@ -169,17 +154,12 @@ func printVersion() {
 }
 
 func printStartUp() {
-	if !smartClient {
-		fmt.Fprintf(output, "In dumb client mode\n")
-	}
-
 	fmt.Fprintf(output, "\n")
 }
 
 func handleArguments() {
 	getopt.Flag(&help, 'h', "Show this help")
 	getopt.Flag(&port, 'p', "Specify the port to listen on")
-	getopt.Flag(&smartClient, 'f', "Whether act as fully featured DBGp client")
 	getopt.Flag(&version, 'v', "Show version number and exit")
 	getopt.Flag(&showXML, 'x', "Show protocol XML")
 	getopt.Flag(&once, '1', "Debug once and then exit")
@@ -275,13 +255,17 @@ func runAsCloudClient(logger logger.Logger) {
 	defer conn.Close()
 	defer fmt.Fprintf(output, "\n%s\n", BrightYellow(Bold("Shutting down client")))
 
-	proto := protocol.NewDbgpClient(conn, false, logger)
+	proto := protocol.NewDbgpClient(conn, logger)
 
 	rl := initReadline()
 	defer rl.Close()
 
 	command := "cloudinit -u " + cloudUser
-	proto.SendCommand(command)
+	err = proto.SendCommand(command)
+	if err != nil {
+		fmt.Fprintf(output, "%s: %s\n", BrightRed("Could not send 'cloudinit' command"), BrightRed(err.Error()))
+		return
+	}
 
 	for {
 		abortClient, err := handleConnection(conn, rl)
@@ -289,7 +273,11 @@ func runAsCloudClient(logger logger.Logger) {
 			if err == readline.ErrInterrupt {
 				fmt.Fprintf(output, "%s: %s\n", BrightYellow("Interrupt, sending detach"), BrightRed(err.Error()))
 				command := "detach"
-				proto.SendCommand(command)
+				err = proto.SendCommand(command)
+				if err != nil {
+					fmt.Fprintf(output, "%s: %s\n", BrightRed("Could not send 'detach' command"), BrightRed(err.Error()))
+					break
+				}
 			} else {
 				fmt.Fprintf(output, "%s: %s\n", BrightRed("Error while handling connection"), BrightRed(err.Error()))
 				break
@@ -297,6 +285,7 @@ func runAsCloudClient(logger logger.Logger) {
 		}
 
 		if abortClient {
+			// We don't care if this fails, as we're aborting anyway
 			command = "cloudstop -u " + cloudUser
 			proto.SendCommand(command)
 			proto.ReadResponse()

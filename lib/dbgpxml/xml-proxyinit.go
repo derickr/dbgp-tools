@@ -8,16 +8,6 @@ import (
 	"strconv"
 )
 
-/*
-<init xmlns="urn:debugger_protocol_v1"
-xmlns:xdebug="https://xdebug.org/dbgp/xdebug"
-fileuri="file:///home/derick/dev/php/derickr-xdebug/tests/debugger/bug01727.inc"
-language="PHP" xdebug:language_version="7.4.0-dev" protocol_version="1.0"
-appid="105446" idekey="dr"><engine
-version="2.9.1-dev"><![CDATA[Xdebug]]></engine><author><![CDATA[Derick
-Rethans]]></author><url><![CDATA[https://xdebug.org]]></url><copyright><![CDATA[Copyright
-(c) 2002-2019 by Derick Rethans]]></copyright></init>
-*/
 type ProxyInitError struct {
 	XMLName xml.Name `xml:"error"`
 	ID      string   `xml:"id,attr"`

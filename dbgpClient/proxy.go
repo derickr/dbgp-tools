@@ -35,7 +35,7 @@ func handleProxyArguments() {
 
 	if unregister != "" {
 		if cloudUser != "" {
-			fmt.Fprintf(output, "%s\n", BrightRed(Bold("Refusing to register to proxy because we're connecting to Xdebug Cloud")))
+			fmt.Fprintf(output, "%s\n", BrightRed(Bold("Refusing to unregister to proxy because we're connecting to Xdebug Cloud")))
 			os.Exit(2)
 		}
 		err := unregisterWithProxy(proxy, unregister)
@@ -52,34 +52,14 @@ func registerWithProxy(address string, idekey string) error {
 	if err != nil {
 		return err
 	}
-
-	proto := protocol.NewDbgpClient(conn, false, logOutput)
+	defer conn.Close()
 
 	command := "proxyinit -m 1 -k " + idekey + " -p " + strconv.Itoa(port)
 	if ssl {
 		command = command + " -s 1"
 	}
 
-	proto.SendCommand(command)
-
-	response, err := proto.ReadResponse()
-	if err != nil {
-		return fmt.Errorf("proxyinit failed: %s", err)
-	}
-
-	if showXML {
-		fmt.Fprintf(output, "%s\n", Faint(response))
-	}
-
-	formatted := proto.FormatXML(response)
-
-	fmt.Fprintln(output, formatted)
-
-	if !formatted.IsSuccess() {
-		return fmt.Errorf("proxyinit failed")
-	}
-
-	return nil
+	return protocol.RunAndQuit(conn, command, output, logOutput, showXML)
 }
 
 func unregisterWithProxy(address string, idekey string) error {
@@ -87,28 +67,9 @@ func unregisterWithProxy(address string, idekey string) error {
 	if err != nil {
 		return err
 	}
-
-	proto := protocol.NewDbgpClient(conn, false, logOutput)
+	defer conn.Close()
 
 	command := "proxystop -k " + idekey
 
-	proto.SendCommand(command)
-
-	response, err := proto.ReadResponse()
-	if err != nil {
-		return fmt.Errorf("proxystop failed: %s", err)
-	}
-
-	if showXML {
-		fmt.Fprintf(output, "%s\n", Faint(response))
-	}
-
-	formatted := proto.FormatXML(response)
-	fmt.Fprintln(output, formatted)
-
-	if !formatted.IsSuccess() {
-		return fmt.Errorf("proxystop failed")
-	}
-
-	return nil
+	return protocol.RunAndQuit(conn, command, output, logOutput, showXML)
 }
