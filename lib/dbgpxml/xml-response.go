@@ -15,18 +15,21 @@ transaction_id="1" feature="resolved_breakpoints" success="1"></response>
 */
 
 type Property struct {
-	XMLName     xml.Name   `xml:"property"`
-	Name        string     `xml:"name,attr"`
-	Fullname    string     `xml:"fullname,attr"`
-	Type        string     `xml:"type,attr"`
-	Classname   string     `xml:"classname,attr,omitempty"`
-	HasChildren bool       `xml:"children,attr,omitempty"`
-	NumChildren int        `xml:"numchildren,attr,omitempty"`
-	Page        int        `xml:"page,attr,omitempty"`
-	PageSize    int        `xml:"pagesize,attr,omitempty"`
-	Children    []Property `xml:"property"`
-	Encoding    string     `xml:"encoding,attr,omitempty"`
-	Value       string     `xml:",chardata"`
+	XMLName      xml.Name   `xml:"property"`
+	Name         string     `xml:"name,attr"`
+	Fullname     string     `xml:"fullname,attr"`
+	Type         string     `xml:"type,attr"`
+	Classname    string     `xml:"classname,attr,omitempty"`
+	HasChildren  bool       `xml:"children,attr,omitempty"`
+	NumChildren  int        `xml:"numchildren,attr,omitempty"`
+	Page         int        `xml:"page,attr,omitempty"`
+	PageSize     int        `xml:"pagesize,attr,omitempty"`
+	Encoding     string     `xml:"encoding,attr,omitempty"`
+	Value        string     `xml:",chardata"`
+	ExtName      string     `xml:"name,omitempty"`
+	ExtFullName  string     `xml:"fullname,omitempty"`
+	ExtClassname string     `xml:"classname,omitempty"`
+	Children     []Property `xml:"property"`
 }
 
 type Message struct {
@@ -167,6 +170,16 @@ func formatTypemap(tid string, typemap Typemap) string {
 
 func formatProperty(tid string, leader string, prop Property) string {
 	header := fmt.Sprintf("%s | ", Black(tid))
+
+	if prop.Name == "" && prop.ExtName != "" {
+		tmpName, _ := base64.StdEncoding.DecodeString(string(prop.ExtName))
+		prop.Name = string(tmpName)
+	}
+
+	if prop.Classname == "" && prop.ExtClassname != "" {
+		tmpClassname, _ := base64.StdEncoding.DecodeString(string(prop.ExtClassname))
+		prop.Classname = string(tmpClassname)
+	}
 
 	content := leader + fmt.Sprintf("%s %s", prop.Type, Bold(Green(prop.Name)))
 
