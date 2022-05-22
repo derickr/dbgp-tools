@@ -7,7 +7,9 @@ dbgpClient/dbgpClient-macos
 dbgpClient/certs
 dbgpClient/client-certs
 dbgpProxy/dbgpProxy
-dbgpProxy/dbgpProxy.exe
+dbgpProxy/dbgpProxy-arm64
 dbgpProxy/dbgpProxy-macos
+dbgpProxy/dbgpProxy-macos-arm64
+dbgpProxy/dbgpProxy.exe
 dbgpProxy/certs
 dbgpProxy/client-certs
