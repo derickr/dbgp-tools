@@ -5,7 +5,7 @@
 all: dbgpClient dbgpClient-macos dbgpClient.exe
 
 dbgpClient: dbgpClient-macos dbgpClient-macos-arm64 dbgpClient-arm64 force
-	GOOS=linux GOARCH=amd64 go build
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
 
 dbgpClient-arm64: force
 	GOOS=linux GOARCH=arm64 go build
