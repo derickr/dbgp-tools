@@ -95,6 +95,11 @@ func (handler *ServerHandler) setupForwarder(conn net.Conn, initialPacket []byte
 		select {
 		case err = <-serverChan:
 			handler.logger.LogUserInfo("proxy-client", clientConnection.GetKey(), "IDE closed connection")
+
+			/* If the IDE connection closes, then we should also close the Xdebug connection otherwise it
+			 * will hang https://github.com/derickr/dbgp-tools/issues/4 */
+			conn.Close()
+
 			return nil
 		case err = <-clientChan:
 			handler.logger.LogUserInfo("proxy-client", clientConnection.GetKey(), "Xdebug connection closed")
