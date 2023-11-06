@@ -162,7 +162,12 @@ ConnectionsLoop:
 
 		if ok {
 			handler.logger.LogUserInfo("proxy-client", key, "Found connection for %s '%s': %s", connType, key, client.FullAddress())
-			handler.setupForwarder(conn, []byte(response), client)
+			err = handler.setupForwarder(conn, []byte(response), client)
+			if err != nil {
+				handler.logger.LogUserWarning("proxy-client", key, "Removed connection information for '%s': %s", key, err)
+				handler.connectionList.RemoveByKey(key)
+				handler.sendDetach(conn)
+			}
 		} else {
 			handler.logger.LogUserInfo("proxy-client", key, "Could not find IDE connection for %s '%s'", connType, key)
 			handler.sendDetach(conn)
