@@ -177,6 +177,23 @@ func (dbgp *dbgpClient) parseResponseXML(rawXmlData string) (dbgpxml.Response, e
 	return response, nil
 }
 
+func (dbgp *dbgpClient) parseCtrlResponseXML(rawXmlData string) (dbgpxml.CtrlResponse, error) {
+	response := dbgpxml.CtrlResponse{}
+
+	reader := strings.NewReader(rawXmlData)
+
+	decoder := xml.NewDecoder(reader)
+	decoder.CharsetReader = charset.NewReaderLabel
+
+	err := decoder.Decode(&response)
+
+	if err != nil {
+		return response, err
+	}
+
+	return response, nil
+}
+
 func (dbgp *dbgpClient) parseStreamXML(rawXmlData string) (dbgpxml.Stream, error) {
 	stream := dbgpxml.Stream{}
 
@@ -292,6 +309,12 @@ func (dbgp *dbgpClient) FormatXML(rawXmlData string) Response {
 	var response Response
 
 	response, err := dbgp.parseResponseXML(rawXmlData)
+
+	if err == nil {
+		return response
+	}
+
+	response, err = dbgp.parseCtrlResponseXML(rawXmlData)
 
 	if err == nil {
 		return response
