@@ -15,7 +15,7 @@ import (
 	"sync"
 )
 
-var clientVersion = "0.5.0-dev"
+var clientVersion = "0.5.0"
 
 var (
 	cloudUser        = ""
