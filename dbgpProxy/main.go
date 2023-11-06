@@ -15,12 +15,13 @@ import (
 	"sync"
 )
 
-var clientVersion = "0.4.2-dev"
+var clientVersion = "0.5.0-dev"
 
 var (
 	cloudUser        = ""
 	disCloudUser     = ""
 	enableSSLServers = false
+	enableForceAdd   = false
 	CloudDomain      = "cloud.xdebug.com"
 	CloudPort        = "9021"
 	help             = false
@@ -34,7 +35,7 @@ var (
 
 func printStartUp() {
 	fmt.Printf("Xdebug DBGp proxy (%s)\n", clientVersion)
-	fmt.Println("Copyright 2020 by Derick Rethans")
+	fmt.Println("Copyright 2023 by Derick Rethans")
 }
 
 func checkEnableSSLServers(logger logger.Logger) {
@@ -57,6 +58,7 @@ func handleArguments() {
 		getopt.FlagLong(&clientSSLAddress, "client-ssl", 0, "Specify the host:port to listen on for IDE (client) SSL connections", "host:port")
 		getopt.FlagLong(&serverSSLAddress, "server-ssl", 0, "Specify the host:port to listen on for debugger engine (server) SSL connections", "host:port")
 	}
+	getopt.Flag(&enableForceAdd, 'f', "If given, allow an IDE to register with an already registered IDE key")
 	getopt.Flag(&version, 'v', "Show version number and exit")
 
 	handleCloudFlags()
@@ -84,7 +86,7 @@ func main() {
 	checkEnableSSLServers(log)
 	handleArguments()
 
-	ideConnectionList := connections.NewConnectionList()
+	ideConnectionList := connections.NewConnectionList(enableForceAdd)
 
 	syncGroup := &sync.WaitGroup{}
 	signalShutdown := make(chan int, 1)

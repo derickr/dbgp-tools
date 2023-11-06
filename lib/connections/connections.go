@@ -70,11 +70,12 @@ func (connection *Connection) GetConnection() net.Conn {
 
 type ConnectionList struct {
 	sync.Mutex
+	forceAdd bool
 	connections map[string]*Connection
 }
 
-func NewConnectionList() *ConnectionList {
-	return &ConnectionList{connections: map[string]*Connection{}}
+func NewConnectionList(forceAdd bool) *ConnectionList {
+	return &ConnectionList{connections: map[string]*Connection{}, forceAdd: forceAdd}
 }
 
 func (list *ConnectionList) Add(connection *Connection) error {
@@ -84,7 +85,14 @@ func (list *ConnectionList) Add(connection *Connection) error {
 	_, ok := list.connections[connection.ideKey]
 
 	if ok {
-		return fmt.Errorf("A client for '%s' is already connected", connection.ideKey)
+		if (list.forceAdd) {
+			delete(list.connections, connection.ideKey)
+
+			return nil
+		} else {
+
+			return fmt.Errorf("A client for '%s' is already connected", connection.ideKey)
+		}
 	}
 
 	list.connections[connection.ideKey] = connection
