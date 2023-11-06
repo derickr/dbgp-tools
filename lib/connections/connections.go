@@ -113,7 +113,9 @@ func (list *ConnectionList) RemoveByKey(ideKey string) error {
 	delete(list.connections, ideKey)
 	list.Unlock()
 
-	connection.ControlRequests <- NewCloseConnectionControl()
+	if connection.claimed {
+		connection.ControlRequests <- NewCloseConnectionControl()
+	}
 
 	return nil
 }
