@@ -188,18 +188,42 @@ func formatProperty(tid string, leader string, prop Property) string {
 		content += fmt.Sprintf("(%s)", Green(prop.Classname))
 	}
 
-	if prop.HasChildren {
-		content += " { \n"
+	if prop.HasChildren && prop.NumChildren > 0 {
+		if prop.Type == "array" {
+			content += ": [ \n"
+		} else {
+			content += " { \n"
+		}
 		for _, child := range prop.Children {
 			content += leader + formatProperty(tid, leader+"  ", child)
 		}
-		content += header + leader + "}"
+		content += header + leader
+		if prop.Type == "array" {
+			content += "]"
+		} else {
+			content += "}"
+		}
 	} else if prop.Type != "uninitialized" {
 		value := []byte(prop.Value)
 		if prop.Encoding == "base64" {
 			value, _ = base64.StdEncoding.DecodeString(string(value))
 		}
-		content += fmt.Sprintf(": %s", Bold(Yellow(value)))
+		switch prop.Type {
+		case "null":
+			/* do nothing */
+		case "bool":
+			if string(value) == "1" {
+				content += fmt.Sprintf(": %s", Bold(Yellow("true")))
+			} else {
+				content += fmt.Sprintf(": %s", Bold(Yellow("false")))
+			}
+		case "array":
+			content += fmt.Sprintf(": []")
+		case "object":
+			content += fmt.Sprintf(": {}")
+		default:
+			content += fmt.Sprintf(": %s", Bold(Yellow(value)))
+		}
 	}
 
 	return header + content + "\n"

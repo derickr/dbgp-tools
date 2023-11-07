@@ -17,7 +17,7 @@ import (
 	"time"
 )
 
-var clientVersion = "0.5.0"
+var clientVersion = "0.5.1-dev"
 
 func displayHelp() {
 	fmt.Fprintf(output, `
