@@ -1,3 +1,6 @@
+WEBSITE_REPO=~/dev/php/xdebug-xdebug.org
+BINARY_LOCATION=$(WEBSITE_REPO)/html/files/binaries
+
 .NOTPARALLEL:
 
 .PHONY: force
@@ -23,8 +26,8 @@ dbgpClient.exe: force
 	GOOS=windows GOARCH=amd64 go build
 
 update-website: all
-	cp dbgpClient /home/derick/dev/php/xdebug-xdebug.org/html/files/binaries
-	cp dbgpClient-arm64 /home/derick/dev/php/xdebug-xdebug.org/html/files/binaries
-	cp dbgpClient-macos /home/derick/dev/php/xdebug-xdebug.org/html/files/binaries
-	cp dbgpClient-macos-arm64 /home/derick/dev/php/xdebug-xdebug.org/html/files/binaries
-	cp dbgpClient.exe /home/derick/dev/php/xdebug-xdebug.org/html/files/binaries
+	cp dbgpClient $(BINARY_LOCATION)
+	cp dbgpClient-arm64 $(BINARY_LOCATION)
+	cp dbgpClient-macos $(BINARY_LOCATION)
+	cp dbgpClient-macos-arm64 $(BINARY_LOCATION)
+	cp dbgpClient.exe $(BINARY_LOCATION)
