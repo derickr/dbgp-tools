@@ -41,6 +41,7 @@ func printCommandList() {
 	fmt.Fprintf(output, "\n")
 	fmt.Fprintf(output, "Commands:\n\n")
 	fmt.Fprintf(output, " ps        Lists all Xdebug enabled PHP scripts\n")
+	fmt.Fprintf(output, " pause     Instructs Xdebug to initiate a debugging connection or breakpoint\n")
 	fmt.Fprintf(output, "\n")
 }
 
@@ -90,17 +91,19 @@ func findFiles() map[int]string {
 	return v
 }
 
-func sendCmd(ctrl_socket string, command string) {
+func sendCmd(ctrl_socket string, scriptPid int, command string) string {
 	var d net.Dialer
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	xml := ""
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond * 10)
 	defer cancel()
+
+	unknownResponseStr := fmt.Sprintf("%10d %s: %s: %s\n", Faint(scriptPid), BrightRed("Error"), "No response on", Faint(ctrl_socket))
 
 	d.LocalAddr = nil // if you have a local addr, add it here
 	raddr := net.UnixAddr{Name: ctrl_socket, Net: "unix"}
 	conn, err := d.DialContext(ctx, "unix", raddr.String())
 	if err != nil {
-		log.Printf("Failed to dial: %v\n", err)
-		return
+		return unknownResponseStr
 	}
 	defer conn.Close()
 
@@ -109,23 +112,27 @@ func sendCmd(ctrl_socket string, command string) {
 		log.Fatal(err)
 	}
 
-	response, _ := bufio.NewReader(conn).ReadString('\000')
+	conn.SetReadDeadline(time.Now().Add(time.Millisecond * 500))
+	response, err := bufio.NewReader(conn).ReadString('\000')
+	if err != nil {
+		return unknownResponseStr
+	}
 	if showXML {
-		fmt.Fprintf(output, "%s\n", Faint(response))
+		xml = fmt.Sprintf("%s\n", Faint(response))
 	}
 		
 	if !dbgpxml.IsValidXml(response) {
 		fmt.Errorf("The received XML is not valid, closing connection: %s", response)
+		return ""
 	}
 
 	reader := protocol.NewDbgpClient(conn, logOutput)
 	formattedResponse := reader.FormatXML(response)
 		
 	if formattedResponse == nil {
-		fmt.Fprintf(output, "%s: Could not interpret XML response\n", BrightRed("Error"))
-		return
+		return unknownResponseStr
 	} 
-	fmt.Fprintln(output, formattedResponse)
+	return fmt.Sprintf("%s%s\n", xml, formattedResponse)
 }
 
 func main() {
@@ -134,30 +141,53 @@ func main() {
 	files := findFiles()
 
 	if len(files) > 1 && pid == 0 && command != "ps" {
-		fmt.Fprintf(output, "%s\n", BrightRed("You must specify a PID with -p as there is more than one script"))
-		return
+		fmt.Fprintf(output, "%s: %s\n", BrightRed("Error"), "You must specify a PID with -p as there is more than one script")
+		printStartUp()
+		getopt.PrintUsage(os.Stdout)
+		printCommandList()
+		os.Exit(1)
 	}
 
 	if command == "ps" {
+		c := make(chan string)
+		spawned := 0
+
 		fmt.Fprintf(output, "%10s %8s %8s %s\n", Faint("PID"), "RSS", "TIME", BrightWhite("COMMAND"));
+
 		for scriptPid, file := range files {
 			if pid == 0 || scriptPid == pid {
-				sendCmd(file, "ps")
+				spawned++
+
+				go func(fpid string, spid int) {
+					c <- sendCmd(fpid, spid, "ps")
+				}(file, scriptPid)
 			}
 		}
-		return;
+
+		for i := 0; i < spawned; i++ {
+			result := <- c
+			fmt.Fprintf(output, "%s", result)
+		}
+		return
+	}
+
+	if len(files) == 0 && pid == 0 && command != "ps" {
+		fmt.Fprintf(output, "%s: %s\n", BrightRed("Error"), "Could not find any running PHP scripts")
+		os.Exit(2)
 	}
 
 	for scriptPid, file := range files {
-		if scriptPid == pid {
+		if (scriptPid == pid) || (len(files) == 1 && pid == 0) {
 			if command == "pause" {
-				sendCmd(file, "pause")
+				result := sendCmd(file, scriptPid, "pause")
+				fmt.Fprintf(output, "%s", result)
 				return
 			}
 			fmt.Fprintf(output, "%s: Unknown command '%s'\n", BrightRed("Error"), command)
-			return
+			os.Exit(3)
 		}
 	}
 
 	fmt.Fprintf(output, "%s: No script with PID '%d' active\n", BrightRed("Error"), pid)
+	os.Exit(4)
 }
