@@ -1,6 +1,6 @@
 WEBSITE_REPO=~/dev/php/xdebug-xdebug.org
 BINARY_LOCATION=$(WEBSITE_REPO)/html/files/binaries
-BINARIES=dbgpProxy dbgpProxy-macos dbgpProxy.exe dbgpProxy-IBMi
+BINARIES=dbgpProxy dbgpProxy-arm64 dbgpProxy-macos dbgpProxy.exe dbgpProxy-IBMi
 
 .NOTPARALLEL:
 
@@ -8,7 +8,7 @@ BINARIES=dbgpProxy dbgpProxy-macos dbgpProxy.exe dbgpProxy-IBMi
 
 all: $(BINARIES)
 
-dbgpProxy: dbgpProxy-macos dbgpProxy-IBMi force
+dbgpProxy: dbgpProxy-macos dbgpProxy-IBMi dbgpProxy-arm64 force
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -tags NO_CLOUD
 
 dbgpProxy-macos: force
@@ -21,6 +21,10 @@ dbgpProxy-IBMi: force
 
 dbgpProxy.exe: force
 	GOOS=windows GOARCH=amd64 go build -tags NO_CLOUD
+
+dbgpProxy-arm64: force
+	GOOS=linux GOARCH=arm64 go build -tags NO_CLOUD
+	mv dbgpProxy dbgpProxy-arm64
 
 dbgpProxy-dev: force
 	GOOS=linux GOARCH=amd64 go build
