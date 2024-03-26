@@ -29,7 +29,7 @@ DBGp debugging engine, reads the XML response, and formats that response
 by interpreting the XML.
 
 A short overview of commands is also available in the online
-documentation at https://xdebug.org/docs/debugclient
+documentation at https://xdebug.org/docs/dbgpClient
 
 You can use <tab> for auto completing commands, and find out which one
 exist.
