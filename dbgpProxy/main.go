@@ -65,7 +65,7 @@ func handleArguments() {
 
 	getopt.Parse()
 
-	if help {
+	if help || len(getopt.Args()) > 0 {
 		getopt.PrintUsage(output)
 		os.Exit(1)
 	}
