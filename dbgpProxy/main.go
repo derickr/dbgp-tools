@@ -15,7 +15,8 @@ import (
 	"sync"
 )
 
-var clientVersion = "0.6.0"
+var clientVersion = "0.6.1"
+var clientYear    = "2024"
 
 var (
 	cloudUser        = ""
@@ -35,7 +36,7 @@ var (
 
 func printStartUp() {
 	fmt.Printf("Xdebug DBGp proxy (%s)\n", clientVersion)
-	fmt.Println("Copyright 2023 by Derick Rethans")
+	fmt.Println("Copyright %s by Derick Rethans", clientYear)
 }
 
 func checkEnableSSLServers(logger logger.Logger) {
