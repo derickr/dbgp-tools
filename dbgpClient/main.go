@@ -17,7 +17,8 @@ import (
 	"time"
 )
 
-var clientVersion = "0.6.0"
+var clientVersion = "0.6.1"
+var clientYear    = "2024"
 
 func displayHelp() {
 	fmt.Fprintf(output, `
@@ -150,7 +151,7 @@ var (
 
 func printVersion() {
 	fmt.Fprintf(output, "Xdebug Simple DBGp client (%s)\n", Bold(clientVersion))
-	fmt.Fprintf(output, "Copyright 2019-2020 by Derick Rethans\n")
+	fmt.Fprintf(output, "Copyright 2019-%s by Derick Rethans\n", clientYear)
 }
 
 func printStartUp() {

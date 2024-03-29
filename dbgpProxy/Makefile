@@ -1,13 +1,14 @@
 WEBSITE_REPO=~/dev/php/xdebug-xdebug.org
 BINARY_LOCATION=$(WEBSITE_REPO)/html/files/binaries
+BINARIES=dbgpProxy-macos dbgpProxy-macos-arm64 dbgpProxy-arm64 dbgpProxy-IBMi dbgpProxy dbgpProxy.exe
 
 .NOTPARALLEL:
 
 .PHONY: force
 
-all: dbgpProxy dbgpProxy-macos dbgpProxy.exe
+all: $(BINARIES) force
 
-dbgpProxy: dbgpProxy-macos dbgpProxy-macos-arm64 dbgpProxy-arm64 dbgpProxy-IBMi force
+dbgpProxy: force
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
 
 dbgpProxy-arm64: force
@@ -30,12 +31,7 @@ dbgpProxy.exe: force
 	GOOS=windows GOARCH=amd64 go build
 
 update-website: all
-	cp dbgpProxy $(BINARY_LOCATION)
-	cp dbgpProxy-arm64 $(BINARY_LOCATION)
-	cp dbgpProxy-macos $(BINARY_LOCATION)
-	cp dbgpProxy-macos-arm64 $(BINARY_LOCATION)
-	cp dbgpProxy-IBMi $(BINARY_LOCATION)
-	cp dbgpProxy.exe $(BINARY_LOCATION)
+	for i in $(BINARIES); do cp $$i $(BINARY_LOCATION); done
 
 deploy: all force
 	$(eval VERSION := $(shell cat main.go | grep "var clientVersion" | sed 's/.*= "//' | sed 's/"//'))
