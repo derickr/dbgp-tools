@@ -39,7 +39,7 @@ update-website: all
 
 deploy: all force
 	$(eval VERSION := $(shell cat main.go | grep "var clientVersion" | sed 's/.*= "//' | sed 's/"//'))
-	-git tag -s $(VERSION) -m "Go with $(VERSION)"
+	-git tag -s dbgpProxy-$(VERSION) -m "Go with dbgpProxy-$(VERSION)"
 	cd $(WEBSITE_REPO) && git checkout master && git pull
 	for i in $(BINARIES); do cp $$i $(BINARY_LOCATION); done
 	cd $(BINARY_LOCATION) && git add $(BINARIES) && git commit -m "Added dbgpProxy binaries version $(VERSION)"

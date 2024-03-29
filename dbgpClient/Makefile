@@ -31,3 +31,11 @@ update-website: all
 	cp dbgpClient-macos $(BINARY_LOCATION)
 	cp dbgpClient-macos-arm64 $(BINARY_LOCATION)
 	cp dbgpClient.exe $(BINARY_LOCATION)
+
+deploy: all force
+	$(eval VERSION := $(shell cat main.go | grep "var clientVersion" | sed 's/.*= "//' | sed 's/"//'))
+	-git tag -s dbgpClient-$(VERSION) -m "Go with dbgpClient-$(VERSION)"
+	cd $(WEBSITE_REPO) && git checkout master && git pull
+	for i in $(BINARIES); do cp $$i $(BINARY_LOCATION); done
+	cd $(BINARY_LOCATION) && git add $(BINARIES) && git commit -m "Added dbgpClient binaries version $(VERSION)"
+	cd $(WEBSITE_REPO) && git push
