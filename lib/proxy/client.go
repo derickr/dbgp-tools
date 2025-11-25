@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -39,6 +40,7 @@ func connectToIDE(clientConnection *connections.Connection) (net.Conn, error) {
 	}
 }
 
+// Connects to IDE, sends the Init packet and proxies messages between IDE and Xdebug
 func (handler *ServerHandler) setupForwarder(conn net.Conn, initialPacket []byte, clientConnection *connections.Connection) error {
 	handler.logger.LogUserInfo("proxy-client", clientConnection.GetKey(), "Connecting to %s", clientConnection.FullAddress())
 	client, err := connectToIDE(clientConnection)
@@ -52,6 +54,7 @@ func (handler *ServerHandler) setupForwarder(conn net.Conn, initialPacket []byte
 	reassembledPacket := fmt.Sprintf("%d\000%s", len(initialPacket)-1, initialPacket)
 	_, err = client.Write([]byte(reassembledPacket))
 	if err != nil {
+		_ = client.Close()
 		return err
 	}
 
@@ -68,13 +71,10 @@ func (handler *ServerHandler) setupForwarder(conn net.Conn, initialPacket []byte
 
 	go func() {
 		// client read loop
-		for {
-			if _, err = io.Copy(conn, client); err != nil {
-				serverChan <- err
-				close(serverChan)
-				break
-			}
+		if _, err = io.Copy(conn, client); err != nil {
+			serverChan <- err
 		}
+		close(serverChan)
 	}()
 
 	// server read loop
@@ -84,9 +84,11 @@ func (handler *ServerHandler) setupForwarder(conn net.Conn, initialPacket []byte
 
 		if timeout {
 			// has client disconnected or had a fatal error?
-			if err, ok := <-serverChan; ok {
+			select {
+			case err := <-serverChan:
 				handler.logger.LogUserInfo("proxy-client", clientConnection.GetKey(), "IDE closed connection")
 				return fmt.Errorf("Client read error: %s", err)
+			default:
 			}
 			continue
 		}
@@ -144,8 +146,10 @@ ConnectionsLoop:
 			}
 		}
 
-		if err != nil {
-			return fmt.Errorf("Error reading response: %v", err)
+		if errors.Is(err, io.EOF) {
+			return nil
+		} else if err != nil {
+			return fmt.Errorf("Error reading response: %w", err)
 		}
 
 		init, _ := reader.ParseInitXML(response)
@@ -169,6 +173,7 @@ ConnectionsLoop:
 				// Error indicates
 				// - IDE connection failed or init packet send error - Xdebug/Cloud should be "released"
 				// - Client disconnected and left Xdebug/Cloud in non-stopped status
+				// - Connection to Xdebug/Cloud failed
 				handler.logger.LogUserWarning("proxy-client", key, "Removed connection information for '%s': %s", key, err)
 				handler.connectionList.RemoveByKey(key)
 				handler.sendDetach(conn)
