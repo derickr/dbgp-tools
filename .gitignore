@@ -18,9 +18,9 @@ dbgpProxy/dbgpProxy-macos
 dbgpProxy/dbgpProxy-macos-arm64
 dbgpProxy/dbgpProxy.exe
 vendor/
-xdebug/xdebug
-xdebug/xdebug-IBMi
-xdebug/xdebug-arm64
-xdebug/xdebug-macos
-xdebug/xdebug-macos-arm64
-xdebug/xdebug.exe
+xdebugctl/xdebugctl
+xdebugctl/xdebugctl-IBMi
+xdebugctl/xdebugctl-arm64
+xdebugctl/xdebugctl-macos
+xdebugctl/xdebugctl-macos-arm64
+xdebugctl/xdebugctl.exe
