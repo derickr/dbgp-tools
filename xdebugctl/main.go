@@ -18,7 +18,7 @@ import (
 	"time"
 )
 
-var clientVersion = "0.0.1"
+var clientVersion = "0.1.0"
 
 var re = regexp.MustCompile(`.*\s(@xdebug-ctrl\.(\d+)yx+).*`)
 
