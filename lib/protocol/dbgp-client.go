@@ -4,15 +4,16 @@ import (
 	"bufio"
 	"encoding/xml"
 	"fmt"
-	"github.com/derickr/dbgp-tools/lib/dbgpxml"
-	"github.com/derickr/dbgp-tools/lib/logger"
-	. "github.com/logrusorgru/aurora" // WTFPL
-	"golang.org/x/net/html/charset"
 	"io"
 	"net"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/derickr/dbgp-tools/lib/dbgpxml"
+	"github.com/derickr/dbgp-tools/lib/logger"
+	. "github.com/logrusorgru/aurora" // WTFPL
+	"golang.org/x/net/html/charset"
 )
 
 type Response interface {
@@ -24,15 +25,15 @@ type Response interface {
 }
 
 type dbgpClient struct {
-	connection  net.Conn
-	logger      logger.Logger
-	reader      *bufio.Reader
-	writer      io.Writer
-	counter     int
+	connection net.Conn
+	logger     logger.Logger
+	reader     *bufio.Reader
+	writer     io.Writer
+	counter    int
 
-	lastSourceBegin  int
-	abortRequested   bool
-	commandsToRun    []string
+	lastSourceBegin int
+	abortRequested  bool
+	commandsToRun   []string
 }
 
 func NewDbgpClient(c net.Conn, logger logger.Logger) *dbgpClient {
@@ -220,14 +221,14 @@ func (dbgp *dbgpClient) readResponse() (string, error, bool) {
 			return "", err, true
 		}
 
-		return "", fmt.Errorf("Error reading length: %s", err), false
+		return "", fmt.Errorf("Error reading length: %w", err), false
 	}
 
 	/* Read data */
 	data, err := dbgp.reader.ReadBytes('\000')
 
 	if err != nil {
-		return "", fmt.Errorf("Error reading data: %s", err), false
+		return "", fmt.Errorf("Error reading data: %w", err), false
 	}
 
 	return string(data), nil, false
