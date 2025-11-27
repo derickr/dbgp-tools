@@ -15,8 +15,8 @@ import (
 	"sync"
 )
 
-var clientVersion = "0.6.1"
-var clientYear    = "2024"
+var clientVersion = "0.6.2"
+var clientYear    = "2025"
 
 var (
 	cloudUser        = ""
