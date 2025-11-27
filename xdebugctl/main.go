@@ -4,32 +4,29 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"log"
+	"os"
+	"runtime"
+	"time"
+
 	"github.com/bitbored/go-ansicon" // BSD-3
 	"github.com/derickr/dbgp-tools/lib/dbgpxml"
 	"github.com/derickr/dbgp-tools/lib/logger"
 	"github.com/derickr/dbgp-tools/lib/protocol"
-	"github.com/pborman/getopt/v2"    // BSD-3
 	. "github.com/logrusorgru/aurora" // WTFPL
-	"log"
-	"net"
-	"os"
-	"regexp"
-	"strconv"
-	"time"
+	"github.com/pborman/getopt/v2"    // BSD-3
 )
 
 var clientVersion = "0.1.0"
 
-var re = regexp.MustCompile(`.*\s(@xdebug-ctrl\.(\d+)yx+).*`)
-
 var (
-	command = ""
-	help    = false
-	pid     = 0
-	showXML = false
-	version      = false
-	output       = ansicon.Convert(os.Stdout)
-	logOutput    = logger.NewConsoleLogger(output)
+	command   = ""
+	help      = false
+	pid       = 0
+	showXML   = false
+	version   = false
+	output    = ansicon.Convert(os.Stdout)
+	logOutput = logger.NewConsoleLogger(output)
 )
 
 func printVersion() {
@@ -60,7 +57,7 @@ func handleArguments() {
 
 	if version {
 		printVersion()
-		os.Exit(0)
+		exit(0)
 	}
 
 	if help || getopt.NArgs() != 1 {
@@ -68,46 +65,26 @@ func handleArguments() {
 		printStartUp()
 		getopt.PrintUsage(os.Stdout)
 		printCommandList()
-		os.Exit(1)
+		exit(1)
 	}
 
 	command = getopt.Arg(0)
 }
 
-func findFiles() map[int]string {
-	file, _ := os.Open("/proc/net/unix")
-
-	s := bufio.NewScanner(file)
-	v := make(map[int]string)
-
-	for s.Scan() {
-		matches := re.FindStringSubmatch(s.Text())
-		if len(matches) > 0 {
-			pid, _ := strconv.Atoi(matches[2])
-			v[pid] = matches[1]
-		}
-	}
-
-	return v
-}
-
 func sendCmd(ctrl_socket string, scriptPid int, command string) string {
-	var d net.Dialer
 	xml := ""
-	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond * 10)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
 	defer cancel()
 
 	unknownResponseStr := fmt.Sprintf("%10d %s: %s: %s\n", Faint(scriptPid), BrightRed("Error"), "No response on", Faint(ctrl_socket))
 
-	d.LocalAddr = nil // if you have a local addr, add it here
-	raddr := net.UnixAddr{Name: ctrl_socket, Net: "unix"}
-	conn, err := d.DialContext(ctx, "unix", raddr.String())
+	conn, err := dialCtrlSocket(ctx, ctrl_socket)
 	if err != nil {
 		return unknownResponseStr
 	}
 	defer conn.Close()
 
-	bCommand := []byte(command);
+	bCommand := []byte(command)
 	if _, err := conn.Write(bCommand); err != nil {
 		log.Fatal(err)
 	}
@@ -120,7 +97,7 @@ func sendCmd(ctrl_socket string, scriptPid int, command string) string {
 	if showXML {
 		xml = fmt.Sprintf("%s\n", Faint(response))
 	}
-		
+
 	if !dbgpxml.IsValidXml(response) {
 		fmt.Errorf("The received XML is not valid, closing connection: %s", response)
 		return ""
@@ -128,31 +105,43 @@ func sendCmd(ctrl_socket string, scriptPid int, command string) string {
 
 	reader := protocol.NewDbgpClient(conn, logOutput)
 	formattedResponse := reader.FormatXML(response)
-		
+
 	if formattedResponse == nil {
 		return unknownResponseStr
-	} 
+	}
 	return fmt.Sprintf("%s%s\n", xml, formattedResponse)
+}
+
+// Give ansicon a chance to write all output before exiting
+func exit(code int) {
+	if runtime.GOOS == "windows" {
+		time.Sleep(time.Duration(time.Microsecond * 50))
+	}
+	os.Exit(code)
 }
 
 func main() {
 	handleArguments()
 
-	files := findFiles()
+	files, err := findFiles()
+	if err != nil {
+		fmt.Fprintf(output, "%s: %s: %s\n", BrightRed("Error"), "Failed reading list of control sockets", err)
+		exit(1)
+	}
 
 	if len(files) > 1 && pid == 0 && command != "ps" {
 		fmt.Fprintf(output, "%s: %s\n", BrightRed("Error"), "You must specify a PID with -p as there is more than one script")
 		printStartUp()
 		getopt.PrintUsage(os.Stdout)
 		printCommandList()
-		os.Exit(1)
+		exit(1)
 	}
 
 	if command == "ps" {
 		c := make(chan string)
 		spawned := 0
 
-		fmt.Fprintf(output, "%10s %8s %8s %s\n", Faint("PID"), "RSS", "TIME", BrightWhite("COMMAND"));
+		fmt.Fprintf(output, "%10s %8s %8s %s\n", Faint("PID"), "RSS", "TIME", BrightWhite("COMMAND"))
 
 		for scriptPid, file := range files {
 			if pid == 0 || scriptPid == pid {
@@ -165,15 +154,15 @@ func main() {
 		}
 
 		for i := 0; i < spawned; i++ {
-			result := <- c
-			fmt.Fprintf(output, "%s", result)
+			result := <-c
+			fmt.Fprintf(output, "%s\n", result)
 		}
-		return
+		exit(0)
 	}
 
 	if len(files) == 0 && pid == 0 && command != "ps" {
 		fmt.Fprintf(output, "%s: %s\n", BrightRed("Error"), "Could not find any running PHP scripts")
-		os.Exit(2)
+		exit(2)
 	}
 
 	for scriptPid, file := range files {
@@ -184,10 +173,10 @@ func main() {
 				return
 			}
 			fmt.Fprintf(output, "%s: Unknown command '%s'\n", BrightRed("Error"), command)
-			os.Exit(3)
+			exit(3)
 		}
 	}
 
 	fmt.Fprintf(output, "%s: No script with PID '%d' active\n", BrightRed("Error"), pid)
-	os.Exit(4)
+	exit(4)
 }
