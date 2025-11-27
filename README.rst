@@ -3,7 +3,7 @@
 ############
 
 This repository contains a set of tools and libraries to interact with
-`DBGP <https://xdebug.org/docs/dbgp>`_, the_protocol that `Xdebug
+`DBGP <https://xdebug.org/docs/dbgp>`_, the protocol that `Xdebug
 <https://xdebug.org>`_ uses for communication with IDEs.
 
 There are three tools:
