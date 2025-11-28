@@ -34,7 +34,7 @@ func dialCtrlSocket(ctx context.Context, ctrl_socket string) (net.Conn, error) {
 
 	var d net.Dialer
 
-	d.LocalAddr = nil // if you have a local addr, add it here
+	d.LocalAddr = nil
 	raddr := net.UnixAddr{Name: ctrl_socket, Net: "unix"}
 	conn, err := d.DialContext(ctx, "unix", raddr.String())
 

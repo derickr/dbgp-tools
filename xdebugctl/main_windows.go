@@ -11,13 +11,12 @@ import (
 )
 
 func findFiles() (map[int]string, error) {
-	//var retval map[int]string
 	retval := make(map[int]string)
 
 	var h ntdll.Handle
 	var oa = ntdll.ObjectAttributes{
 		ObjectName: ntdll.NewUnicodeString(`\Device\NamedPipe\`),
-		Attributes: 0x40, // OBJ_CASE_INSENSITIVA
+		Attributes: 0x40, // OBJ_CASE_INSENSITIVE
 	}
 	oa.Length = uint32(unsafe.Sizeof(oa))
 
@@ -30,11 +29,10 @@ func findFiles() (map[int]string, error) {
 		ntdll.FILE_SHARE_READ|ntdll.FILE_SHARE_WRITE|ntdll.FILE_SHARE_DELETE,
 		ntdll.FILE_DIRECTORY_FILE|ntdll.FILE_SYNCHRONOUS_IO_NONALERT|ntdll.FILE_OPEN_FOR_BACKUP_INTENT,
 	); st.Error() != nil {
-		// print error,
 		return retval, st.Error()
 	}
 
-	buf := make([]byte, 64*1024) // thats a lot?
+	buf := make([]byte, 64*1024)
 	restart := true
 
 	for {
@@ -57,7 +55,6 @@ func findFiles() (map[int]string, error) {
 			if st == ntdll.STATUS_NO_MORE_FILES {
 				break
 			}
-			// print error
 			return retval, st.Error()
 		}
 
