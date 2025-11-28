@@ -17,7 +17,7 @@ import (
 	"github.com/pborman/getopt/v2"    // BSD-3
 )
 
-var clientVersion = "0.1.0"
+var clientVersion = "0.2.0"
 
 var (
 	command   = ""
