@@ -1,6 +1,6 @@
 WEBSITE_REPO=~/dev/php/xdebug-xdebug.org
 BINARY_LOCATION=$(WEBSITE_REPO)/html/files/binaries
-BINARIES=dbgpClient-arm64 dbgpClient dbgpClient.exe
+BINARIES=xdebugctl-arm64 xdebugctl xdebugctl.exe
 
 .NOTPARALLEL:
 

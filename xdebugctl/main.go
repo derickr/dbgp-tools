@@ -17,7 +17,8 @@ import (
 	"github.com/pborman/getopt/v2"    // BSD-3
 )
 
-var clientVersion = "0.2.0"
+var clientVersion = "0.2.1"
+var clientYear    = "2025"
 
 var (
 	command   = ""
@@ -31,7 +32,7 @@ var (
 
 func printVersion() {
 	fmt.Fprintf(output, "Xdebug Controller (%s)\n", Bold(clientVersion))
-	fmt.Fprintf(output, "Copyright 2023 by Derick Rethans\n")
+	fmt.Fprintf(output, "Copyright 2023-%s by Derick Rethans\n", clientYear)
 }
 
 func printCommandList() {
