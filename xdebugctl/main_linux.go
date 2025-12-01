@@ -11,7 +11,7 @@ import (
 	"strconv"
 )
 
-var re = regexp.MustCompile(`.*\s(@xdebug-ctrl\.(\d+)yx+).*`)
+var re = regexp.MustCompile(`.*\s(@xdebug-ctrl\.(\d+)(yx+)?).*`)
 
 func findFiles() (map[int]string, error) {
 	file, _ := os.Open("/proc/net/unix")
