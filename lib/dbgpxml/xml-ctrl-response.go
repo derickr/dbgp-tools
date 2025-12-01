@@ -12,7 +12,7 @@ import (
 <ps>
 
 	<engine version="3.3.0alpha4-dev"><![CDATA[Xdebug]]></engine>
-	<filename><![CDATA[/tmp/test.php]]></filename>
+	<fileuri><![CDATA[/tmp/test.php]]></fileuri>
 	<pid><![CDATA[1943117]]></pid>
 
 </ps>
