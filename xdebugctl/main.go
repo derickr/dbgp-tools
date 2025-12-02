@@ -156,7 +156,7 @@ func main() {
 
 		for i := 0; i < spawned; i++ {
 			result := <-c
-			fmt.Fprintf(output, "%s\n", result)
+			fmt.Fprintf(output, "%s", result)
 		}
 		exit(0)
 	}
