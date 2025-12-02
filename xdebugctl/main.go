@@ -17,7 +17,7 @@ import (
 	"github.com/pborman/getopt/v2"    // BSD-3
 )
 
-var clientVersion = "0.3.0"
+var clientVersion = "0.3.1"
 var clientYear    = "2025"
 
 var (
